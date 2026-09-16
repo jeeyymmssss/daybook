@@ -25,3 +25,6 @@ create policy "Delete own tasks" on public.tasks for delete using (auth.uid() = 
 
 -- Live sync between devices
 alter publication supabase_realtime add table public.tasks;
+
+-- Added for alarms: minutes before the start time to ring (empty = no reminder)
+alter table public.tasks add column if not exists remind integer;
