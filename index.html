@@ -231,7 +231,6 @@ body[data-tab=budget] .nowbar{display:none}
 .tabs button[aria-selected=true]{color:var(--sun-ink)}
 .tabs button svg{width:15px;height:15px}
 .tab-glow{position:absolute;top:4px;bottom:4px;left:4px;width:calc(50% - 4px);border-radius:24px;background:var(--sun);box-shadow:0 6px 16px rgba(246,199,90,.3);transition:transform .45s var(--spring)}
-body[data-tab=budget] .tab-glow{transform:translateX(100%)}
 .mobile-tabs{display:none}
 .field{font-size:12px;color:var(--muted);display:flex;flex-direction:column;gap:6px}
 input[type=number],input[type=search]{background:rgba(255,255,255,.12);border:1px solid var(--edge-soft);border-radius:12px;padding:10px 12px;font-size:14px;width:100%;color:var(--ink);color-scheme:dark}
@@ -426,6 +425,24 @@ dialog>*{transition:opacity .25s ease}
 .user-trigger .user-name{display:block}
 .user-trigger .avatar{transition:box-shadow .2s}
 .user-trigger:hover .avatar{box-shadow:0 0 0 3px rgba(246,199,90,.45)}
+/* ---------- liquid glass lens (segmented controls) ---------- */
+.tab-glow{display:none !important}
+.has-lens{position:relative}
+.has-lens>button{position:relative;z-index:1}
+.has-lens>button[aria-selected=true],.has-lens>button[aria-pressed=true]{background:transparent !important;box-shadow:none !important;color:var(--ink);font-weight:600}
+.tabs button[aria-selected=true]{color:var(--ink)}
+.lens{position:absolute;left:0;top:0;width:0;height:0;border-radius:999px;pointer-events:none;z-index:2;opacity:0;
+  background:linear-gradient(180deg,rgba(255,255,255,.14),rgba(255,255,255,.04) 55%,rgba(255,255,255,.09));
+  -webkit-backdrop-filter:blur(2px) saturate(180%) brightness(1.1);backdrop-filter:blur(2px) saturate(180%) brightness(1.1);
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.28),inset 1.5px 1.5px 1px -1px rgba(255,255,255,.95),inset -1px -1.5px 1px -1px rgba(255,255,255,.55),inset 0 0 14px rgba(255,255,255,.14),0 8px 20px rgba(10,20,40,.18),0 1px 2px rgba(0,0,0,.12)}
+.lens::before{content:"";position:absolute;inset:0;border-radius:inherit;background:radial-gradient(120% 90% at 22% 0%,rgba(255,255,255,.45),rgba(255,255,255,0) 45%),radial-gradient(80% 70% at 85% 110%,rgba(255,255,255,.22),rgba(255,255,255,0) 50%);mix-blend-mode:screen}
+.lens::after{content:"";position:absolute;inset:1px;border-radius:inherit;border:1px solid rgba(255,255,255,.12);border-top-color:rgba(255,255,255,.5);border-bottom-color:rgba(255,255,255,.08)}
+.lens.ready{opacity:1;transition:transform .55s var(--spring),width .55s var(--spring),height .3s ease,opacity .2s}
+/* dark mode switch: glass knob */
+.switch.on{background:linear-gradient(180deg,rgba(246,199,90,.95),rgba(236,176,52,.95))}
+.switch::after{background:linear-gradient(180deg,rgba(255,255,255,.75),rgba(255,255,255,.35));-webkit-backdrop-filter:blur(3px) saturate(180%);backdrop-filter:blur(3px) saturate(180%);
+  box-shadow:inset 1px 1px 1px -.5px rgba(255,255,255,1),inset 0 0 0 1px rgba(255,255,255,.4),0 2px 6px rgba(0,0,0,.25)}
+.switch.on::after{background:linear-gradient(180deg,rgba(255,255,255,.7),rgba(255,255,255,.3))}
 /* ---------- scrollbars ---------- */
 ::-webkit-scrollbar{width:10px;height:10px}
 ::-webkit-scrollbar-track,::-webkit-scrollbar-corner{background:transparent}
@@ -1250,6 +1267,78 @@ document.querySelectorAll("dialog").forEach(dlg=>{
     closing.finished.then(()=>{closing=null;nativeClose.call(this,v)}).catch(()=>{closing=null});
   };
 });
+
+/* ---------- liquid glass lens ---------- */
+const LENS_REFRACT=!!(navigator.userAgentData&&navigator.userAgentData.brands&&navigator.userAgentData.brands.some(b=>/Chromium/i.test(b.brand)));
+const lensDefs=(()=>{
+  const svg=document.createElementNS("http://www.w3.org/2000/svg","svg");
+  svg.setAttribute("aria-hidden","true");
+  svg.style.cssText="position:absolute;width:0;height:0;overflow:hidden";
+  svg.innerHTML="<defs></defs>";
+  document.body.appendChild(svg);
+  return svg.firstChild;
+})();
+const lensCache={};
+// displacement map: pixels near the capsule edge sample from further out, which bends the content like a glass lens
+function lensFilter(w,h){
+  w=Math.round(w); h=Math.round(h);
+  const key=w+"x"+h;
+  if(lensCache[key])return lensCache[key];
+  const c=document.createElement("canvas"); c.width=w; c.height=h;
+  const ctx=c.getContext("2d"), img=ctx.createImageData(w,h), d=img.data;
+  const r=Math.min(w,h)/2, band=Math.max(4,r*0.9);
+  for(let y=0;y<h;y++)for(let x=0;x<w;x++){
+    const px=x+.5, py=y+.5;
+    const cx=w>=h?Math.min(Math.max(px,r),w-r):w/2, cy=w>=h?h/2:Math.min(Math.max(py,r),h-r);
+    const dx=px-cx, dy=py-cy, dist=Math.hypot(dx,dy), edge=r-dist;
+    let k=0,nx=0,ny=0;
+    if(dist>0){nx=dx/dist;ny=dy/dist}
+    if(edge>=0&&edge<band){const t=1-edge/band;k=t*t*t}
+    else if(edge<0)k=1;
+    const i=(y*w+x)*4;
+    d[i]=128+nx*k*127; d[i+1]=128+ny*k*127; d[i+2]=128; d[i+3]=255;
+  }
+  ctx.putImageData(img,0,0);
+  const id="lens-"+key;
+  const f=document.createElementNS("http://www.w3.org/2000/svg","filter");
+  f.setAttribute("id",id);
+  for(const [k,v] of Object.entries({x:0,y:0,width:w,height:h,filterUnits:"userSpaceOnUse",primitiveUnits:"userSpaceOnUse","color-interpolation-filters":"sRGB"}))f.setAttribute(k,v);
+  f.innerHTML=`<feImage href="${c.toDataURL()}" x="0" y="0" width="${w}" height="${h}" preserveAspectRatio="none" result="map"/>
+    <feGaussianBlur in="SourceGraphic" stdDeviation="0.4" result="soft"/>
+    <feDisplacementMap in="soft" in2="map" scale="${Math.round(h*0.85)}" xChannelSelector="R" yChannelSelector="G"/>`;
+  lensDefs.appendChild(f);
+  return lensCache[key]=`url(#${id})`;
+}
+function liquidSeg(box){
+  if(box.dataset.lens)return;
+  box.dataset.lens="1";
+  box.classList.add("has-lens");
+  const lens=document.createElement("span");
+  lens.className="lens"; lens.setAttribute("aria-hidden","true");
+  box.appendChild(lens);
+  let last=null;
+  const place=()=>{
+    const b=box.querySelector('button[aria-selected="true"],button[aria-pressed="true"]');
+    if(!b||!b.offsetWidth){return}
+    const x=b.offsetLeft, y=b.offsetTop, w=b.offsetWidth, h=b.offsetHeight;
+    lens.style.width=w+"px"; lens.style.height=h+"px";
+    lens.style.transform=`translate(${x}px,${y}px)`;
+    if(LENS_REFRACT){
+      const f=lensFilter(w,h);
+      lens.style.backdropFilter=lens.style.webkitBackdropFilter=`${f} saturate(180%) brightness(1.1)`;
+    }
+    if(last&&last!==b&&lens.classList.contains("ready")&&!reduceMotion()&&lens.animate){
+      // a small liquid stretch while it slides
+      lens.animate([{scale:"1 1"},{scale:"1.07 .94",offset:.35},{scale:"1 1"}],{duration:520,easing:"ease-out"});
+    }
+    last=b;
+    if(!lens.classList.contains("ready"))requestAnimationFrame(()=>lens.classList.add("ready"));
+  };
+  new MutationObserver(place).observe(box,{subtree:true,attributes:true,attributeFilter:["aria-selected","aria-pressed"],childList:true});
+  if(window.ResizeObserver)new ResizeObserver(place).observe(box);
+  place();
+}
+document.querySelectorAll(".tabs, #bFilter, .type-seg").forEach(liquidSeg);
 
 /* ---------- glass popovers: dropdown fields + account menu ---------- */
 const HAS_POPOVER=typeof HTMLElement!=="undefined"&&HTMLElement.prototype.hasOwnProperty("popover");
