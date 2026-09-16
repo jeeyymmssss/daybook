@@ -245,13 +245,13 @@ textarea{min-height:70px;resize:vertical}
     <label>Icon<div class="emojis" id="emojis"></div></label>
     <label>Notes (one item per line)<textarea id="fNotes" maxlength="400"></textarea></label>
     <label>Reminder<select id="fRemind">
-      <option value="">No reminder</option>
       <option value="0">At start time</option>
       <option value="5">5 minutes before</option>
       <option value="10">10 minutes before</option>
       <option value="15">15 minutes before</option>
       <option value="30">30 minutes before</option>
       <option value="60">1 hour before</option>
+      <option value="-1">No alarm</option>
     </select></label>
     <label class="check-line"><input type="checkbox" id="fPin"> Pin to sidebar</label>
     <div class="actions">
@@ -298,7 +298,7 @@ let calMonth=new Date(); calMonth.setDate(1);
 let editingId=null, chosenEmoji=EMOJIS[0];
 
 function uid(){return (crypto.randomUUID?crypto.randomUUID():"t"+Date.now().toString(36)+Math.random().toString(36).slice(2,9))}
-const fromRow=r=>({id:r.id,title:r.title,date:r.date,time:r.time||"",end:r.end_time||"",emoji:r.emoji||"📚",tag:r.tag||"Personal",notes:r.notes||"",pinned:!!r.pinned,done:!!r.done,remind:(r.remind===null||r.remind===undefined)?null:Number(r.remind)});
+const fromRow=r=>({id:r.id,title:r.title,date:r.date,time:r.time||"",end:r.end_time||"",emoji:r.emoji||"📚",tag:r.tag||"Personal",notes:r.notes||"",pinned:!!r.pinned,done:!!r.done,remind:(r.remind===null||r.remind===undefined)?0:Number(r.remind)});
 const toRow=t=>({id:t.id,title:t.title,date:t.date,time:t.time||null,end_time:t.end||null,emoji:t.emoji,tag:t.tag,notes:t.notes,pinned:t.pinned,done:t.done,remind:t.remind});
 function setStatus(msg){$("status").textContent=msg}
 
@@ -331,7 +331,7 @@ function renderTimeline(){
         <button class="task ${t.done?"done":""}" data-edit="${t.id}">
           <span class="icon">${esc(t.emoji)}</span>
           <span><div class="t-title">${esc(t.title)}</div>${notes}</span>
-          <span class="t-time">${fmtTime(t.time)}${t.end?"<br>"+fmtTime(t.end):""}${t.remind!==null&&t.time?`<span class="bell" title="Reminder set">🔔 ${t.remind?t.remind+"m before":"on time"}</span>`:""}</span>
+          <span class="t-time">${fmtTime(t.time)}${t.end?"<br>"+fmtTime(t.end):""}${t.remind>=0&&t.time?`<span class="bell" title="Reminder set">🔔 ${t.remind?t.remind+"m before":"on time"}</span>`:""}</span>
         </button></div>`;
     }).join("");
   }
@@ -406,7 +406,7 @@ function openForm(id=null,pin=false){
   $("fTag").value=t?.tag||"Personal";
   $("fNotes").value=t?.notes||"";
   $("fPin").checked=t?!!t.pinned:pin;
-  $("fRemind").value=(t&&t.remind!==null&&t.remind!==undefined)?String(t.remind):"";
+  $("fRemind").value=t?String(t.remind??0):"0";
   chosenEmoji=t?.emoji||EMOJIS[0];
   renderEmojis();
   $("delBtn").style.display=t?"":"none";
@@ -432,7 +432,7 @@ $("form").addEventListener("submit",e=>{
     time:$("fTime").value, end:$("fEnd").value, tag:$("fTag").value,
     notes:$("fNotes").value.trim(), emoji:chosenEmoji,
     pinned:$("fPin").checked, done:existing?.done||false,
-    remind:$("fRemind").value===""?null:Number($("fRemind").value)
+    remind:Number($("fRemind").value||0)
   };
   tasks = existing ? tasks.map(t=>t.id===task.id?task:t) : [...tasks,task];
   selected=task.date;
@@ -470,13 +470,13 @@ try{const th=localStorage.getItem("daybook-theme");if(th)document.documentElemen
 const AL_ON="daybook-alarms-on", AL_FIRED="daybook-fired", AL_SNOOZE="daybook-snooze";
 const readJSON=(k,d)=>{try{return JSON.parse(localStorage.getItem(k))??d}catch(e){return d}};
 const writeJSON=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
-let alarmsOn=readJSON(AL_ON,false);
+let alarmsOn=readJSON(AL_ON,true);
 let audioCtx=null, beepTimer=null, ringing=null, titleTimer=null;
 const GRACE=10*60*1000; // still ring if the page opens up to 10 min late
 
 function alarmKey(t){return t.id+"|"+t.date+"|"+t.time+"|"+t.remind}
 function alarmAt(t){
-  if(t.done||t.remind===null||!t.time)return null;
+  if(t.done||!t.time||t.remind<0)return null;
   const [h,m]=t.time.split(":").map(Number);
   const d=parse(t.date); d.setHours(h,m,0,0);
   return d.getTime()-t.remind*60000;
@@ -504,7 +504,8 @@ function renderAlarmWidget(){
     $("alarmInfo").textContent="Alarms are off on this device.";
     $("alarmToggle").textContent="Turn on alarms"; $("alarmToggle").className="alarm-btn";
   }else{
-    let info=upcoming?`${upcoming} upcoming reminder${upcoming>1?"s":""}. Keep this tab open to hear them.`:"On. Add a reminder to any task with a start time.";
+    const soundReady=audioCtx&&audioCtx.state==="running";
+    let info=!soundReady?"On. Click anywhere on the page once so the alarm can play sound.":upcoming?`${upcoming} upcoming reminder${upcoming>1?"s":""}. Keep this tab open to hear them.`:"On. Tasks with a start time will ring at that time.";
     if(perm==="denied")info+=" Pop-up notifications are blocked in your browser settings.";
     $("alarmInfo").textContent=info;
     $("alarmToggle").textContent="Turn off alarms"; $("alarmToggle").className="alarm-btn off";
@@ -520,7 +521,12 @@ $("alarmToggle").onclick=async()=>{
   renderAlarmWidget();
 };
 // browsers only allow sound after a click, so unlock on the first interaction
-document.addEventListener("pointerdown",()=>{if(alarmsOn)unlockAudio()},{once:true});
+document.addEventListener("pointerdown",()=>{
+  if(!alarmsOn)return;
+  unlockAudio();
+  if("Notification" in window && Notification.permission==="default"){try{Notification.requestPermission().then(renderAlarmWidget)}catch(e){}}
+  renderAlarmWidget();
+});
 
 function ring(t){
   ringing=t;
