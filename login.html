@@ -77,6 +77,13 @@ input:focus{outline:none;border-color:var(--sun);background:rgba(255,255,255,.16
 .switch{font-size:13px;color:var(--muted);text-align:center;margin-top:4px}
 .switch button,.forgot{border:0;background:none;color:var(--sun-text);font-weight:500;cursor:pointer;padding:0}
 .forgot{font-size:12px;align-self:flex-end}
+.at-wrap{position:relative;display:block}
+.at-wrap .at{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none}
+.at-wrap input{width:100%;padding-left:32px}
+.hint{font-size:11px;color:var(--muted);min-height:15px}
+.hint.good{color:#BDF2C4}
+.hint.bad{color:var(--danger)}
+label[hidden]{display:none}
 .msg{font-size:13px;line-height:1.5;border-radius:14px;padding:10px 12px;display:none;border:1px solid var(--edge-soft)}
 .msg.error{display:block;background:rgba(210,73,58,.25);color:#FFE3DE}
 .msg.ok{display:block;background:rgba(246,199,90,.22);color:var(--ink)}
@@ -140,7 +147,11 @@ button:active:not(:disabled){transform:scale(.97);transition:transform .12s ease
     <h2 id="title">Welcome back</h2>
     <p class="sub" id="subtitle">Sign in to your account.</p>
     <div class="msg" id="msg" role="status"></div>
-    <label>Email<input type="email" id="email" autocomplete="email" required></label>
+    <label id="userField" hidden>Username
+      <span class="at-wrap"><span class="at">@</span><input type="text" id="username" autocomplete="username" maxlength="20" spellcheck="false" autocapitalize="off" placeholder="yourname"></span>
+      <span class="hint" id="userHint">3–20 characters: letters, numbers, dots, underscores</span>
+    </label>
+    <label><span id="idLabel">Email or username</span><input type="text" id="email" autocomplete="username" spellcheck="false" autocapitalize="off" required></label>
     <label>Password<input type="password" id="password" autocomplete="current-password" minlength="6" required></label>
     <button type="button" class="forgot" id="forgotBtn">Forgot password?</button>
     <button type="submit" class="primary" id="submitBtn">Sign in</button>
@@ -163,50 +174,100 @@ button:active:not(:disabled){transform:scale(.97);transition:transform .12s ease
   sb.auth.onAuthStateChange((event,s)=>{if(s&&event==="SIGNED_IN")location.replace(APP)});
 
   let mode="signin";
+  const USER_RE=/^[a-z0-9_.]{3,20}$/;
+  const cleanName=v=>v.trim().replace(/^@/,"").toLowerCase();
   function show(type,text){const m=$("msg");m.className="msg";void m.offsetWidth;m.className="msg "+type;m.textContent=text}
+  function hint(text,kind){const h=$("userHint");h.textContent=text;h.className="hint"+(kind?" "+kind:"")}
   function setMode(next){
     mode=next;
     ["title","subtitle","submitBtn","switchText"].forEach(id=>{const el=$(id);el.classList.remove("swap");void el.offsetWidth;el.classList.add("swap")});
     const up=mode==="signup";
     $("title").textContent=up?"Create your account":"Welcome back";
-    $("subtitle").textContent=up?"Use at least 6 characters for your password.":"Sign in to your account.";
+    $("subtitle").textContent=up?"Pick a username and a password with at least 6 characters.":"Sign in with your email or username.";
     $("submitBtn").textContent=up?"Create account":"Sign in";
     $("switchText").textContent=up?"Already have an account?":"New here?";
     $("switchBtn").textContent=up?"Sign in":"Create an account";
     $("password").autocomplete=up?"new-password":"current-password";
     $("forgotBtn").style.display=up?"none":"";
+    $("userField").hidden=!up;
+    $("idLabel").textContent=up?"Email":"Email or username";
+    $("email").type=up?"email":"text";
+    $("email").autocomplete=up?"email":"username";
     $("msg").className="msg";
   }
   $("switchBtn").onclick=()=>setMode(mode==="signin"?"signup":"signin");
+  setMode("signin");
+  $("title").classList.remove("swap");
+
+  // live username availability while signing up
+  let checkTimer=null, lastChecked="", lastFree=false;
+  async function checkName(name){
+    const {data,error}=await sb.rpc("username_available",{p_username:name});
+    if(error){hint("Couldn't check that username right now.","bad");return null}
+    lastChecked=name; lastFree=!!data;
+    if(cleanName($("username").value)===name) hint(data?"@"+name+" is available":"@"+name+" is taken",data?"good":"bad");
+    return !!data;
+  }
+  $("username").addEventListener("input",()=>{
+    const el=$("username"), pos=el.selectionStart, low=el.value.toLowerCase().replace(/\s/g,"");
+    if(low!==el.value){el.value=low;try{el.setSelectionRange(pos,pos)}catch(e){}}
+    const name=cleanName(el.value);
+    clearTimeout(checkTimer);
+    if(!name){hint("3–20 characters: letters, numbers, dots, underscores");return}
+    if(!USER_RE.test(name)){hint("Use 3–20 characters: letters, numbers, dots, or underscores.","bad");return}
+    hint("Checking…");
+    checkTimer=setTimeout(()=>checkName(name),400);
+  });
 
   $("forgotBtn").onclick=async()=>{
     const email=$("email").value.trim();
-    if(!email){show("error","Enter your email first, then select Forgot password.");$("email").focus();return}
+    if(!email.includes("@")){show("error","Enter your email address (not your username), then select Forgot password.");$("email").focus();return}
     const {error}=await sb.auth.resetPasswordForEmail(email,{redirectTo:location.origin+"/"+APP});
     error?show("error",error.message):show("ok","Check your inbox for a password reset link.");
   };
 
   $("form").addEventListener("submit",async e=>{
     e.preventDefault();
-    const email=$("email").value.trim(), password=$("password").value;
-    if(!email||!email.includes("@")){show("error","Enter a valid email address.");return}
+    const id=$("email").value.trim(), password=$("password").value;
     if(password.length<6){show("error","Password must be at least 6 characters.");return}
 
     $("submitBtn").disabled=true; $("submitBtn").classList.add("busy");
     try{
       if(mode==="signup"){
-        const {data,error}=await sb.auth.signUp({email,password,options:{emailRedirectTo:location.origin+"/"+APP}});
-        if(error)throw error;
+        const username=cleanName($("username").value);
+        if(!USER_RE.test(username)){show("error","Choose a username with 3–20 letters, numbers, dots, or underscores.");$("username").focus();return}
+        if(!id.includes("@")){show("error","Enter a valid email address.");$("email").focus();return}
+        const free=lastChecked===username?lastFree:await checkName(username);
+        if(free===false){show("error","@"+username+" is already taken. Try another username.");$("username").focus();return}
+        const {data,error}=await sb.auth.signUp({email:id,password,options:{data:{username},emailRedirectTo:location.origin+"/"+APP}});
+        if(error){
+          if(/database error/i.test(error.message))throw new Error("@"+username+" was just taken. Try another username.");
+          throw error;
+        }
         if(data.session){location.replace(APP);return}
-        show("ok","Account created. Check your email and open the confirmation link to sign in.");
-        setMode("signin"); show("ok","Account created. Check your email and open the confirmation link, then sign in here.");
+        setMode("signin");
+        $("email").value=username;
+        show("ok","Account created. Open the confirmation link in your email, then sign in here as @"+username+".");
       }else{
+        if(!id){show("error","Enter your email or username.");$("email").focus();return}
+        let email=id;
+        if(!id.includes("@")||id.startsWith("@")){
+          const name=cleanName(id);
+          const {data,error}=await sb.rpc("email_for_login",{p_username:name,p_password:password});
+          if(error){
+            if(/too_many_attempts/.test(error.message))throw new Error("Too many wrong passwords for @"+name+". Wait 15 minutes, or sign in with your email.");
+            throw new Error("Couldn't sign in with a username right now: "+error.message);
+          }
+          if(!data)throw new Error("Username or password is incorrect.");
+          email=data;
+        }
         const {error}=await sb.auth.signInWithPassword({email,password});
         if(error)throw error;
         location.replace(APP);
       }
     }catch(err){
-      show("error",err.message==="Invalid login credentials"?"Email or password is incorrect.":err.message);
+      const m=err.message||"";
+      show("error",m==="Invalid login credentials"?"Email, username, or password is incorrect.":m==="Email not confirmed"?"Confirm your email first using the link we sent you.":m);
     }finally{
       $("submitBtn").disabled=false; $("submitBtn").classList.remove("busy");
     }
