@@ -506,6 +506,23 @@ input:focus,textarea:focus,select:focus,.gsel-btn[aria-expanded=true]{border-col
 .eyebrow b{background:rgba(255,255,255,.85)}
 .msg.ok{background:rgba(255,255,255,.16)}
 ::-webkit-scrollbar-thumb:active{background-color:rgba(255,255,255,.65)}
+/* ---------- softer, darker glass ---------- */
+.lg{background:linear-gradient(180deg,rgba(255,255,255,.08),rgba(20,16,12,.1) 55%,rgba(255,255,255,.03)) !important;
+  -webkit-backdrop-filter:var(--lg-filter) saturate(140%) brightness(.84);backdrop-filter:var(--lg-filter) saturate(140%) brightness(.84);
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.14),inset 1.5px 1.5px 1px -1px rgba(255,255,255,.6),inset -1px -1.5px 1px -1px rgba(255,255,255,.25),inset 0 0 10px rgba(255,255,255,.05),0 6px 16px rgba(10,20,40,.16) !important}
+.lg::before{opacity:.5}
+.lg:hover{background:linear-gradient(180deg,rgba(255,255,255,.13),rgba(20,16,12,.05) 55%,rgba(255,255,255,.07)) !important}
+.lg.fab,.lg.btn.primary,.lg.alarm-btn:not(.off),.lg.nb-done,.lg.empty-add,.lg.primary{
+  background:linear-gradient(180deg,rgba(255,255,255,.14),rgba(20,16,12,.06) 58%,rgba(255,255,255,.08)) !important;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.24),inset 1.5px 1.5px 1px -1px rgba(255,255,255,.75),inset -1px -1.5px 1px -1px rgba(255,255,255,.3),inset 0 0 12px rgba(255,255,255,.07),0 8px 20px rgba(10,20,40,.2) !important}
+.lg.fab:hover,.lg.btn.primary:hover,.lg.alarm-btn:not(.off):hover,.lg.nb-done:hover,.lg.empty-add:hover,.lg.primary:hover:not(:disabled){
+  background:linear-gradient(180deg,rgba(255,255,255,.2),rgba(255,255,255,.04) 58%,rgba(255,255,255,.12)) !important}
+.rail .lg:not(.on):not(:hover),.nowbar .lg.nav:not(:hover){background:transparent !important;box-shadow:none !important;-webkit-backdrop-filter:none;backdrop-filter:none}
+.lens{background:linear-gradient(180deg,rgba(255,255,255,.08),rgba(20,16,12,.1) 55%,rgba(255,255,255,.03));
+  -webkit-backdrop-filter:blur(2px) saturate(140%) brightness(.84);backdrop-filter:blur(2px) saturate(140%) brightness(.84) !important;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.16),inset 1.5px 1.5px 1px -1px rgba(255,255,255,.65),inset -1px -1.5px 1px -1px rgba(255,255,255,.28),inset 0 0 10px rgba(255,255,255,.06),0 6px 16px rgba(10,20,40,.16)}
+.lens::before{opacity:.5}
+.lens::after{border-color:rgba(255,255,255,.06);border-top-color:rgba(255,255,255,.28)}
 </style>
 </head>
 <body class="checking" data-tab="planner">
@@ -1148,13 +1165,13 @@ function renderAlarmWidget(){
   const upcoming=tasks.filter(t=>{const a=alarmAt(t);return a&&a>Date.now()}).length;
   if(!alarmsOn){
     $("alarmInfo").textContent="Alarms are off on this device.";
-    $("alarmToggle").textContent="Turn on alarms"; $("alarmToggle").className="alarm-btn";
+    $("alarmToggle").textContent="Turn on alarms"; $("alarmToggle").classList.remove("off");
   }else{
     const soundReady=audioCtx&&audioCtx.state==="running";
     let info=!soundReady?"On. Click anywhere on the page once so the alarm can play sound.":upcoming?`${upcoming} upcoming reminder${upcoming>1?"s":""}. Keep this tab open to hear them.`:"On. Tasks with a start time will ring at that time.";
     if(perm==="denied")info+=" Pop-up notifications are blocked in your browser settings.";
     $("alarmInfo").textContent=info;
-    $("alarmToggle").textContent="Turn off alarms"; $("alarmToggle").className="alarm-btn off";
+    $("alarmToggle").textContent="Turn off alarms"; $("alarmToggle").classList.add("off");
   }
 }
 $("alarmToggle").onclick=async()=>{
