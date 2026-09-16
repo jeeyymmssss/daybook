@@ -83,26 +83,26 @@ input:focus{outline:none;border-color:var(--sun);background:rgba(255,255,255,.16
 @supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){ .pane{background:rgba(70,60,52,.85)} }
 /* ---------- motion ---------- */
 :root{
-  --spring:cubic-bezier(.34,1.56,.64,1);
-  --spring-soft:cubic-bezier(.22,1.2,.36,1);
+  --spring:cubic-bezier(.25,1.1,.5,1);
+  --spring-soft:cubic-bezier(.22,1,.36,1);
 }
 @supports (transition-timing-function:linear(0,1)){
   :root{
-    --spring:linear(0,.009,.035 2.1%,.141,.281 6.7%,.723 12.9%,.938 16.7%,1.017,1.077,1.121,1.149 24.3%,1.159,1.163,1.161,1.154 29.9%,1.129 32.8%,1.051 39.6%,1.017 43.1%,.991,.977 51%,.974 53.8%,.975 57.1%,.997 69.8%,1.003 76.9%,1.004 83.8%,1);
-    --spring-soft:linear(0,.02,.08 3%,.3 8%,.62 14%,.88 21%,1.02 28%,1.06 34%,1.05 40%,1.01 50%,.995 62%,1);
+    --spring:linear(0,.012,.05 3%,.2 7%,.45 12%,.7 18%,.87 25%,.96 32%,1.01 40%,1.02 48%,1.01 60%,1);
+    --spring-soft:linear(0,.02,.08 3%,.3 8%,.62 14%,.86 21%,.97 28%,1.005 36%,1.004 46%,1);
   }
 }
 button{transition:transform .6s var(--spring),background-color .25s ease,box-shadow .3s ease,filter .2s ease,color .2s ease,border-color .2s ease}
-button:active:not(:disabled){transform:scale(.92);transition:transform .12s ease-out,background-color .1s}
-.fab:hover,.chip:hover,.btn:hover,.alarm-btn:hover,.primary:hover:not(:disabled),.empty button:hover,.nb-done:hover{transform:scale(1.04)}
-.arrow:hover,.rail button:hover,.nowbar .nb-btn:hover,button.avatar:hover{transform:scale(1.1)}
-.task:active,.pin:active{transform:scale(.985)}
-.check:active{transform:scale(.8)}
-.day:active{transform:scale(.85)}
+button:active:not(:disabled){transform:scale(.97);transition:transform .12s ease-out,background-color .1s}
+.fab:hover,.chip:hover,.btn:hover,.alarm-btn:hover,.primary:hover:not(:disabled),.empty button:hover,.nb-done:hover{transform:scale(1.02)}
+.arrow:hover,.rail button:hover,.nowbar .nb-btn:hover,button.avatar:hover{transform:scale(1.04)}
+.task:active,.pin:active{transform:scale(.993)}
+.check:active{transform:scale(.92)}
+.day:active{transform:scale(.94)}
 
-@keyframes cardIn{0%{transform:translateY(30px) scale(.94);opacity:0}100%{transform:none;opacity:1}}
-@keyframes swapIn{0%{transform:translateY(8px) scale(.97);opacity:0;filter:blur(4px)}100%{transform:none;opacity:1;filter:none}}
-@keyframes shake{0%,100%{transform:none}20%{transform:translateX(-8px)}40%{transform:translateX(7px)}60%{transform:translateX(-5px)}80%{transform:translateX(3px)}}
+@keyframes cardIn{0%{transform:translateY(12px);opacity:0}100%{transform:none;opacity:1}}
+@keyframes swapIn{0%{transform:translateY(4px);opacity:0;filter:blur(2px)}100%{transform:none;opacity:1;filter:none}}
+@keyframes shake{0%,100%{transform:none}25%{transform:translateX(-4px)}50%{transform:translateX(3px)}75%{transform:translateX(-2px)}}
 .card{animation:cardIn 1s var(--spring-soft) both}
 .preview div{animation:cardIn .9s var(--spring-soft) both}
 .preview div:nth-child(1){animation-delay:.25s}
