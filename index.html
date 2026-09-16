@@ -231,27 +231,27 @@ textarea{min-height:70px;resize:vertical}
 }
 /* ---------- motion ---------- */
 :root{
-  --spring:cubic-bezier(.34,1.56,.64,1);
-  --spring-soft:cubic-bezier(.22,1.2,.36,1);
+  --spring:cubic-bezier(.25,1.1,.5,1);
+  --spring-soft:cubic-bezier(.22,1,.36,1);
 }
 @supports (transition-timing-function:linear(0,1)){
   :root{
-    --spring:linear(0,.009,.035 2.1%,.141,.281 6.7%,.723 12.9%,.938 16.7%,1.017,1.077,1.121,1.149 24.3%,1.159,1.163,1.161,1.154 29.9%,1.129 32.8%,1.051 39.6%,1.017 43.1%,.991,.977 51%,.974 53.8%,.975 57.1%,.997 69.8%,1.003 76.9%,1.004 83.8%,1);
-    --spring-soft:linear(0,.02,.08 3%,.3 8%,.62 14%,.88 21%,1.02 28%,1.06 34%,1.05 40%,1.01 50%,.995 62%,1);
+    --spring:linear(0,.012,.05 3%,.2 7%,.45 12%,.7 18%,.87 25%,.96 32%,1.01 40%,1.02 48%,1.01 60%,1);
+    --spring-soft:linear(0,.02,.08 3%,.3 8%,.62 14%,.86 21%,.97 28%,1.005 36%,1.004 46%,1);
   }
 }
 button{transition:transform .6s var(--spring),background-color .25s ease,box-shadow .3s ease,filter .2s ease,color .2s ease,border-color .2s ease}
-button:active:not(:disabled){transform:scale(.92);transition:transform .12s ease-out,background-color .1s}
-.fab:hover,.chip:hover,.btn:hover,.alarm-btn:hover,.primary:hover:not(:disabled),.empty button:hover,.nb-done:hover{transform:scale(1.04)}
-.arrow:hover,.rail button:hover,.nowbar .nb-btn:hover,button.avatar:hover{transform:scale(1.1)}
-.task:active,.pin:active{transform:scale(.985)}
-.check:active{transform:scale(.8)}
-.day:active{transform:scale(.85)}
+button:active:not(:disabled){transform:scale(.97);transition:transform .12s ease-out,background-color .1s}
+.fab:hover,.chip:hover,.btn:hover,.alarm-btn:hover,.primary:hover:not(:disabled),.empty button:hover,.nb-done:hover{transform:scale(1.02)}
+.arrow:hover,.rail button:hover,.nowbar .nb-btn:hover,button.avatar:hover{transform:scale(1.04)}
+.task:active,.pin:active{transform:scale(.993)}
+.check:active{transform:scale(.92)}
+.day:active{transform:scale(.94)}
 
-@keyframes pop{0%{transform:scale(.4)}100%{transform:scale(1)}}
-@keyframes popIn{0%{transform:scale(.85) translateY(10px);opacity:0}100%{transform:none;opacity:1}}
-@keyframes rise{0%{transform:translateY(24px) scale(.97);opacity:0}100%{transform:none;opacity:1}}
-@keyframes ripple{0%{box-shadow:0 0 0 0 rgba(246,199,90,.6)}100%{box-shadow:0 0 0 14px rgba(246,199,90,0)}}
+@keyframes pop{0%{transform:scale(.8)}100%{transform:scale(1)}}
+@keyframes popIn{0%{transform:scale(.97) translateY(6px);opacity:0}100%{transform:none;opacity:1}}
+@keyframes rise{0%{transform:translateY(12px);opacity:0}100%{transform:none;opacity:1}}
+@keyframes ripple{0%{box-shadow:0 0 0 0 rgba(246,199,90,.45)}100%{box-shadow:0 0 0 8px rgba(246,199,90,0)}}
 .check.just{animation:pop .7s var(--spring),ripple .7s ease-out}
 .row.pop-in{animation:popIn .7s var(--spring) both}
 .day.sel.just{animation:pop .6s var(--spring)}
@@ -265,10 +265,10 @@ body.ready .right>*:nth-child(4){animation-delay:.18s}
 body.ready .right>*:nth-child(5){animation-delay:.22s}
 body.ready .nowbar{animation:nbRise 1s var(--spring-soft) .25s both}
 body.ready .rail{animation:railIn 1s var(--spring-soft) .2s both}
-@keyframes nbRise{0%{transform:translate(-50%,40px) scale(.9);opacity:0}100%{transform:translate(-50%,0);opacity:1}}
-@keyframes railIn{0%{transform:translate(-30px,-50%) scale(.9);opacity:0}100%{transform:translate(0,-50%);opacity:1}}
+@keyframes nbRise{0%{transform:translate(-50%,16px);opacity:0}100%{transform:translate(-50%,0);opacity:1}}
+@keyframes railIn{0%{transform:translate(-12px,-50%);opacity:0}100%{transform:translate(0,-50%);opacity:1}}
 .nb-done.burst{animation:burst .7s var(--spring)}
-@keyframes burst{0%{transform:scale(.8)}40%{transform:scale(1.15)}100%{transform:scale(1)}}
+@keyframes burst{0%{transform:scale(.95)}50%{transform:scale(1.03)}100%{transform:scale(1)}}
 .nb-track{transition:transform .6s var(--spring)}
 .nb-track.bump{animation:popIn .6s var(--spring-soft)}
 ::view-transition-old(root),::view-transition-new(root){animation:none;mix-blend-mode:normal}
@@ -942,18 +942,18 @@ document.querySelectorAll("dialog").forEach(dlg=>{
     if(!this.animate||reduceMotion())return;
     const kids=[...this.children];
     if(origin){
-      this.animate([{transform:morphTransform(this,origin),borderRadius:"60px",opacity:.5},{transform:"none",borderRadius:"28px",opacity:1}],{duration:650,easing:SPRING});
-      kids.forEach(k=>k.animate([{opacity:0},{opacity:0,offset:.25},{opacity:1}],{duration:450,easing:"ease-out"}));
+      this.animate([{transform:morphTransform(this,origin),borderRadius:"60px",opacity:.5},{transform:"none",borderRadius:"28px",opacity:1}],{duration:420,easing:SPRING});
+      kids.forEach(k=>k.animate([{opacity:0},{opacity:0,offset:.3},{opacity:1}],{duration:380,easing:"ease-out"}));
     }else{
-      this.animate([{transform:"scale(.6)",opacity:0},{transform:"none",opacity:1}],{duration:650,easing:SPRING});
+      this.animate([{transform:"scale(.94)",opacity:0},{transform:"none",opacity:1}],{duration:380,easing:SPRING});
     }
   };
   dlg.close=function(v){
     if(!this.open||closing)return;
     if(!this.animate||reduceMotion()){nativeClose.call(this,v);return}
-    const target=origin&&origin.width?morphTransform(this,origin):"scale(.85)";
+    const target=origin&&origin.width?morphTransform(this,origin):"scale(.96)";
     [...this.children].forEach(k=>k.animate([{opacity:1},{opacity:0}],{duration:160,fill:"forwards"}).finished.then(a=>a.cancel()).catch(()=>{}));
-    closing=this.animate([{transform:"none",opacity:1},{transform:target,opacity:0,borderRadius:"60px"}],{duration:300,easing:"cubic-bezier(.4,0,.8,.4)"});
+    closing=this.animate([{transform:"none",opacity:1},{transform:target,opacity:0,borderRadius:"60px"}],{duration:240,easing:"cubic-bezier(.4,0,.8,.4)"});
     closing.finished.then(()=>{closing=null;nativeClose.call(this,v)}).catch(()=>{closing=null});
   };
 });
