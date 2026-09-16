@@ -185,6 +185,7 @@ input:disabled{opacity:.6}
 .nb-bar i{display:block;height:100%;background:var(--sun);width:0}
 .nb-done{border-radius:30px !important;width:auto !important;padding:0 16px;background:var(--sun);color:var(--sun-ink);font-weight:500;font-size:13px}
 .nb-done:hover{filter:brightness(1.05);background:var(--sun) !important}
+.nowbar [hidden]{display:none !important}
 
 /* dialogs */
 dialog{border:1px solid var(--edge);border-radius:28px;padding:0;color:var(--ink);width:min(440px,92vw);background:rgba(90,78,68,.55);-webkit-backdrop-filter:blur(36px) saturate(160%);backdrop-filter:blur(36px) saturate(160%);box-shadow:0 30px 80px rgba(0,0,0,.4)}
@@ -431,7 +432,7 @@ dialog>*{transition:opacity .25s ease}
 .has-lens>button{position:relative;z-index:1}
 .has-lens>button[aria-selected=true],.has-lens>button[aria-pressed=true]{background:transparent !important;box-shadow:none !important;color:var(--ink);font-weight:600}
 .tabs button[aria-selected=true]{color:var(--ink)}
-.lens{position:absolute;left:0;top:0;width:0;height:0;border-radius:999px;pointer-events:none;z-index:2;opacity:0;
+.lens{position:absolute;left:0;top:0;width:0;height:0;border-radius:999px;pointer-events:none;z-index:0;opacity:0;
   background:linear-gradient(180deg,rgba(255,255,255,.14),rgba(255,255,255,.04) 55%,rgba(255,255,255,.09));
   -webkit-backdrop-filter:blur(2px) saturate(180%) brightness(1.1);backdrop-filter:blur(2px) saturate(180%) brightness(1.1);
   box-shadow:inset 0 0 0 1px rgba(255,255,255,.28),inset 1.5px 1.5px 1px -1px rgba(255,255,255,.95),inset -1px -1.5px 1px -1px rgba(255,255,255,.55),inset 0 0 14px rgba(255,255,255,.14),0 8px 20px rgba(10,20,40,.18),0 1px 2px rgba(0,0,0,.12)}
@@ -443,6 +444,26 @@ dialog>*{transition:opacity .25s ease}
 .switch::after{background:linear-gradient(180deg,rgba(255,255,255,.75),rgba(255,255,255,.35));-webkit-backdrop-filter:blur(3px) saturate(180%);backdrop-filter:blur(3px) saturate(180%);
   box-shadow:inset 1px 1px 1px -.5px rgba(255,255,255,1),inset 0 0 0 1px rgba(255,255,255,.4),0 2px 6px rgba(0,0,0,.25)}
 .switch.on::after{background:linear-gradient(180deg,rgba(255,255,255,.7),rgba(255,255,255,.3))}
+/* ---------- liquid glass buttons ---------- */
+.lg{--lg-filter:blur(3px);position:relative;isolation:isolate;border:0 !important;
+  background:linear-gradient(180deg,rgba(255,255,255,.18),rgba(255,255,255,.05) 55%,rgba(255,255,255,.11)) !important;
+  -webkit-backdrop-filter:var(--lg-filter) saturate(180%) brightness(1.08);backdrop-filter:var(--lg-filter) saturate(180%) brightness(1.08);
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.22),inset 1.5px 1.5px 1px -1px rgba(255,255,255,.95),inset -1px -1.5px 1px -1px rgba(255,255,255,.45),inset 0 0 12px rgba(255,255,255,.1),0 6px 16px rgba(10,20,40,.14) !important}
+.lg::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:-1;
+  background:radial-gradient(120% 90% at 22% 0%,rgba(255,255,255,.38),rgba(255,255,255,0) 46%),radial-gradient(80% 70% at 85% 115%,rgba(255,255,255,.18),rgba(255,255,255,0) 50%)}
+.lg:hover{background:linear-gradient(180deg,rgba(255,255,255,.26),rgba(255,255,255,.09) 55%,rgba(255,255,255,.16)) !important}
+.lg:disabled{opacity:.55}
+/* tinted (main actions) */
+.lg.fab,.lg.btn.primary,.lg.alarm-btn:not(.off),.lg.nb-done,.lg.empty-add,.lg.primary{color:var(--sun-ink) !important;
+  background:linear-gradient(180deg,rgba(255,219,130,.9),rgba(246,192,72,.74) 58%,rgba(252,208,105,.86)) !important;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.35),inset 1.5px 1.5px 1px -1px rgba(255,255,255,1),inset -1px -1.5px 1px -1px rgba(255,255,255,.55),inset 0 0 14px rgba(255,255,255,.18),0 8px 22px rgba(246,190,70,.32) !important}
+.lg.fab:hover,.lg.btn.primary:hover,.lg.alarm-btn:not(.off):hover,.lg.nb-done:hover,.lg.empty-add:hover,.lg.primary:hover:not(:disabled){
+  background:linear-gradient(180deg,rgba(255,226,150,.95),rgba(248,198,84,.82) 58%,rgba(253,214,118,.92)) !important}
+.lg.btn.del{color:var(--danger) !important}
+/* quiet until hovered: side bar and bottom-bar arrows */
+.rail .lg:not(.on):not(:hover),.nowbar .lg.nav:not(:hover){background:transparent !important;box-shadow:none !important;-webkit-backdrop-filter:none;backdrop-filter:none}
+.rail .lg:not(.on):not(:hover)::before,.nowbar .lg.nav:not(:hover)::before{opacity:0}
+.rail .lg.on{color:var(--ink)}
 /* ---------- scrollbars ---------- */
 ::-webkit-scrollbar{width:10px;height:10px}
 ::-webkit-scrollbar-track,::-webkit-scrollbar-corner{background:transparent}
@@ -458,6 +479,33 @@ dialog[open]>form,dialog[open]>.alarm-box{overflow-y:auto;overscroll-behavior:co
 dialog>form{padding-right:18px}
 dialog>form::-webkit-scrollbar-track{margin:22px 0}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+/* ---------- neutral: no yellow on buttons or background ---------- */
+.scene i:nth-child(3){display:none}
+.hero::after,.intro::after{display:none}
+.lg.fab,.lg.btn.primary,.lg.alarm-btn:not(.off),.lg.nb-done,.lg.empty-add,.lg.primary{color:var(--ink) !important;font-weight:600;
+  background:linear-gradient(180deg,rgba(255,255,255,.36),rgba(255,255,255,.15) 58%,rgba(255,255,255,.26)) !important;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.4),inset 1.5px 1.5px 1px -1px rgba(255,255,255,1),inset -1px -1.5px 1px -1px rgba(255,255,255,.55),inset 0 0 14px rgba(255,255,255,.16),0 8px 22px rgba(10,20,40,.2) !important}
+.lg.fab:hover,.lg.btn.primary:hover,.lg.alarm-btn:not(.off):hover,.lg.nb-done:hover,.lg.empty-add:hover,.lg.primary:hover:not(:disabled){
+  background:linear-gradient(180deg,rgba(255,255,255,.46),rgba(255,255,255,.22) 58%,rgba(255,255,255,.34)) !important}
+.fab,.primary,.empty button,.nb-done,.btn.primary,.alarm-btn{box-shadow:none}
+.day.sel{background:rgba(255,255,255,.88);color:#2A2622}
+.day.sel::after{background:#2A2622}
+.day.has::after{background:rgba(255,255,255,.85)}
+.day.today:not(.sel){box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.75)}
+.check.on{background:rgba(255,255,255,.9);border-color:transparent;color:#2A2622}
+@keyframes ripple{0%{box-shadow:0 0 0 0 rgba(255,255,255,.45)}100%{box-shadow:0 0 0 8px rgba(255,255,255,0)}}
+.emojis button[aria-pressed=true]{background:rgba(255,255,255,.34);box-shadow:inset 0 0 0 1px rgba(255,255,255,.5)}
+.cat-pick button[aria-pressed=true]{border-color:rgba(255,255,255,.7);background:rgba(255,255,255,.18)}
+.switch.on{background:rgba(255,255,255,.42)}
+input:focus,textarea:focus,select:focus,.gsel-btn[aria-expanded=true]{border-color:rgba(255,255,255,.7) !important}
+:focus-visible{outline-color:rgba(255,255,255,.9)}
+.link-btn,.forgot,.switch-link,.switch button{color:var(--ink) !important;font-weight:600}
+.gsel-opt .tick{color:var(--ink)}
+.user-trigger:hover .avatar{box-shadow:0 0 0 3px rgba(255,255,255,.4)}
+.alarm-emoji{background:rgba(255,255,255,.22);box-shadow:inset 0 0 0 1px rgba(255,255,255,.4),0 0 0 10px rgba(255,255,255,.1)}
+.eyebrow b{background:rgba(255,255,255,.85)}
+.msg.ok{background:rgba(255,255,255,.16)}
+::-webkit-scrollbar-thumb:active{background-color:rgba(255,255,255,.65)}
 </style>
 </head>
 <body class="checking" data-tab="planner">
@@ -1269,7 +1317,9 @@ document.querySelectorAll("dialog").forEach(dlg=>{
 });
 
 /* ---------- liquid glass lens ---------- */
-const LENS_REFRACT=!!(navigator.userAgentData&&navigator.userAgentData.brands&&navigator.userAgentData.brands.some(b=>/Chromium/i.test(b.brand)));
+// Edge-bending (SVG displacement) is turned off: browsers currently place the effect
+// off-target and leave visible smears. The glass look comes from CSS instead.
+const LENS_REFRACT=false;
 const lensDefs=(()=>{
   const svg=document.createElementNS("http://www.w3.org/2000/svg","svg");
   svg.setAttribute("aria-hidden","true");
@@ -1339,6 +1389,30 @@ function liquidSeg(box){
   place();
 }
 document.querySelectorAll(".tabs, #bFilter, .type-seg").forEach(liquidSeg);
+
+// liquid glass on action buttons (including ones added later)
+const LG_SEL=".fab,.chip,.alarm-btn,.btn,.arrow,.rail button,.nowbar .nb-btn,.qchip,.empty button";
+function liquidButton(el){
+  if(el.dataset.lg)return;
+  el.dataset.lg="1"; el.classList.add("lg");
+  if(el.parentElement&&el.parentElement.classList.contains("empty"))el.classList.add("empty-add");
+  if(!LENS_REFRACT||!window.ResizeObserver)return;
+  let key="";
+  new ResizeObserver(()=>{
+    const w=el.offsetWidth,h=el.offsetHeight;
+    if(!w||!h)return;
+    const k=w+"x"+h; if(k===key)return; key=k;
+    el.style.setProperty("--lg-filter",lensFilter(w,h)+" blur(.6px)");
+  }).observe(el);
+}
+document.querySelectorAll(LG_SEL).forEach(liquidButton);
+new MutationObserver(muts=>{
+  for(const m of muts)for(const n of m.addedNodes){
+    if(n.nodeType!==1)continue;
+    if(n.matches(LG_SEL))liquidButton(n);
+    n.querySelectorAll&&n.querySelectorAll(LG_SEL).forEach(liquidButton);
+  }
+}).observe(document.body,{childList:true,subtree:true});
 
 /* ---------- glass popovers: dropdown fields + account menu ---------- */
 const HAS_POPOVER=typeof HTMLElement!=="undefined"&&HTMLElement.prototype.hasOwnProperty("popover");
