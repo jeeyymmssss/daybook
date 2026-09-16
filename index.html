@@ -112,6 +112,16 @@ button{cursor:pointer;border:0;background:none}
 .next .icon{width:32px;height:32px;font-size:16px}
 .w-title{font-size:13px;font-weight:500}
 body.checking .app{visibility:hidden}
+.bell{display:block;font-size:11px;margin-top:2px}
+.alarm-widget .w-sub{margin-top:4px}
+.alarm-btn{margin-top:12px;border-radius:10px;padding:9px 14px;background:var(--sun);color:var(--sun-ink);font-weight:500;font-size:13px;width:100%}
+.alarm-btn.off{background:var(--panel);color:var(--ink)}
+.alarm-box{padding:30px 26px;text-align:center;display:flex;flex-direction:column;gap:10px;align-items:center}
+.alarm-emoji{width:72px;height:72px;border-radius:50% 50% 50% 22px;background:var(--sun);display:grid;place-items:center;font-size:34px;animation:ring 1s ease-in-out infinite}
+@keyframes ring{0%,100%{transform:rotate(0)}20%{transform:rotate(-12deg)}40%{transform:rotate(12deg)}60%{transform:rotate(-8deg)}80%{transform:rotate(8deg)}}
+.alarm-box h3{margin:6px 0 0;font-weight:500;font-size:22px}
+.alarm-box .actions{width:100%;flex-wrap:wrap}
+.alarm-box .btn{flex:1}
 .status{font-size:11px;color:var(--muted);margin-top:auto;line-height:1.5}
 
 /* Modal */
@@ -211,6 +221,11 @@ textarea{min-height:70px;resize:vertical}
       <div class="w-title">Coming up</div>
       <div id="nextUp"></div>
     </div>
+    <div class="widget alarm-widget">
+      <div class="w-title">Alarms</div>
+      <div class="w-sub" id="alarmInfo">Alarms are off on this device.</div>
+      <button class="alarm-btn" id="alarmToggle">Turn on alarms</button>
+    </div>
     <div class="status" id="status">Loading your tasks…</div>
   </aside>
 </div>
@@ -229,6 +244,15 @@ textarea{min-height:70px;resize:vertical}
     </div>
     <label>Icon<div class="emojis" id="emojis"></div></label>
     <label>Notes (one item per line)<textarea id="fNotes" maxlength="400"></textarea></label>
+    <label>Reminder<select id="fRemind">
+      <option value="">No reminder</option>
+      <option value="0">At start time</option>
+      <option value="5">5 minutes before</option>
+      <option value="10">10 minutes before</option>
+      <option value="15">15 minutes before</option>
+      <option value="30">30 minutes before</option>
+      <option value="60">1 hour before</option>
+    </select></label>
     <label class="check-line"><input type="checkbox" id="fPin"> Pin to sidebar</label>
     <div class="actions">
       <button type="button" class="btn del" id="delBtn">Delete</button>
@@ -236,6 +260,19 @@ textarea{min-height:70px;resize:vertical}
       <button type="submit" class="btn primary" id="saveBtn">Save task</button>
     </div>
   </form>
+</dialog>
+
+<dialog id="alarmDlg" aria-labelledby="alarmTitle">
+  <div class="alarm-box">
+    <div class="alarm-emoji" id="alarmEmoji">⏰</div>
+    <h3 id="alarmTitle"></h3>
+    <div class="w-sub" id="alarmWhen"></div>
+    <div class="actions">
+      <button type="button" class="btn ghost" id="snoozeBtn">Snooze 5 min</button>
+      <button type="button" class="btn ghost" id="dismissBtn">Dismiss</button>
+      <button type="button" class="btn primary" id="alarmDoneBtn">Mark done</button>
+    </div>
+  </div>
 </dialog>
 
 <script>
@@ -261,8 +298,8 @@ let calMonth=new Date(); calMonth.setDate(1);
 let editingId=null, chosenEmoji=EMOJIS[0];
 
 function uid(){return (crypto.randomUUID?crypto.randomUUID():"t"+Date.now().toString(36)+Math.random().toString(36).slice(2,9))}
-const fromRow=r=>({id:r.id,title:r.title,date:r.date,time:r.time||"",end:r.end_time||"",emoji:r.emoji||"📚",tag:r.tag||"Personal",notes:r.notes||"",pinned:!!r.pinned,done:!!r.done});
-const toRow=t=>({id:t.id,title:t.title,date:t.date,time:t.time||null,end_time:t.end||null,emoji:t.emoji,tag:t.tag,notes:t.notes,pinned:t.pinned,done:t.done});
+const fromRow=r=>({id:r.id,title:r.title,date:r.date,time:r.time||"",end:r.end_time||"",emoji:r.emoji||"📚",tag:r.tag||"Personal",notes:r.notes||"",pinned:!!r.pinned,done:!!r.done,remind:(r.remind===null||r.remind===undefined)?null:Number(r.remind)});
+const toRow=t=>({id:t.id,title:t.title,date:t.date,time:t.time||null,end_time:t.end||null,emoji:t.emoji,tag:t.tag,notes:t.notes,pinned:t.pinned,done:t.done,remind:t.remind});
 function setStatus(msg){$("status").textContent=msg}
 
 async function persist(task){
@@ -294,7 +331,7 @@ function renderTimeline(){
         <button class="task ${t.done?"done":""}" data-edit="${t.id}">
           <span class="icon">${esc(t.emoji)}</span>
           <span><div class="t-title">${esc(t.title)}</div>${notes}</span>
-          <span class="t-time">${fmtTime(t.time)}${t.end?"<br>"+fmtTime(t.end):""}</span>
+          <span class="t-time">${fmtTime(t.time)}${t.end?"<br>"+fmtTime(t.end):""}${t.remind!==null&&t.time?`<span class="bell" title="Reminder set">🔔 ${t.remind?t.remind+"m before":"on time"}</span>`:""}</span>
         </button></div>`;
     }).join("");
   }
@@ -369,6 +406,7 @@ function openForm(id=null,pin=false){
   $("fTag").value=t?.tag||"Personal";
   $("fNotes").value=t?.notes||"";
   $("fPin").checked=t?!!t.pinned:pin;
+  $("fRemind").value=(t&&t.remind!==null&&t.remind!==undefined)?String(t.remind):"";
   chosenEmoji=t?.emoji||EMOJIS[0];
   renderEmojis();
   $("delBtn").style.display=t?"":"none";
@@ -393,7 +431,8 @@ $("form").addEventListener("submit",e=>{
     id:existing?.id||uid(), title, date:$("fDate").value||selected,
     time:$("fTime").value, end:$("fEnd").value, tag:$("fTag").value,
     notes:$("fNotes").value.trim(), emoji:chosenEmoji,
-    pinned:$("fPin").checked, done:existing?.done||false
+    pinned:$("fPin").checked, done:existing?.done||false,
+    remind:$("fRemind").value===""?null:Number($("fRemind").value)
   };
   tasks = existing ? tasks.map(t=>t.id===task.id?task:t) : [...tasks,task];
   selected=task.date;
@@ -427,6 +466,116 @@ $("themeBtn").onclick=()=>{
 };
 try{const th=localStorage.getItem("daybook-theme");if(th)document.documentElement.dataset.theme=th}catch(e){}
 
+/* ---------- alarms ---------- */
+const AL_ON="daybook-alarms-on", AL_FIRED="daybook-fired", AL_SNOOZE="daybook-snooze";
+const readJSON=(k,d)=>{try{return JSON.parse(localStorage.getItem(k))??d}catch(e){return d}};
+const writeJSON=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
+let alarmsOn=readJSON(AL_ON,false);
+let audioCtx=null, beepTimer=null, ringing=null, titleTimer=null;
+const GRACE=10*60*1000; // still ring if the page opens up to 10 min late
+
+function alarmKey(t){return t.id+"|"+t.date+"|"+t.time+"|"+t.remind}
+function alarmAt(t){
+  if(t.done||t.remind===null||!t.time)return null;
+  const [h,m]=t.time.split(":").map(Number);
+  const d=parse(t.date); d.setHours(h,m,0,0);
+  return d.getTime()-t.remind*60000;
+}
+function unlockAudio(){
+  try{audioCtx=audioCtx||new (window.AudioContext||window.webkitAudioContext)();if(audioCtx.state==="suspended")audioCtx.resume()}catch(e){}
+}
+function beep(){
+  if(!audioCtx)return;
+  const now=audioCtx.currentTime;
+  [0,0.18,0.36].forEach(off=>{
+    const o=audioCtx.createOscillator(), g=audioCtx.createGain();
+    o.type="sine"; o.frequency.value=880;
+    g.gain.setValueAtTime(0.0001,now+off);
+    g.gain.exponentialRampToValueAtTime(0.35,now+off+0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001,now+off+0.15);
+    o.connect(g).connect(audioCtx.destination);
+    o.start(now+off); o.stop(now+off+0.16);
+  });
+}
+function renderAlarmWidget(){
+  const perm=("Notification" in window)?Notification.permission:"unsupported";
+  const upcoming=tasks.filter(t=>{const a=alarmAt(t);return a&&a>Date.now()}).length;
+  if(!alarmsOn){
+    $("alarmInfo").textContent="Alarms are off on this device.";
+    $("alarmToggle").textContent="Turn on alarms"; $("alarmToggle").className="alarm-btn";
+  }else{
+    let info=upcoming?`${upcoming} upcoming reminder${upcoming>1?"s":""}. Keep this tab open to hear them.`:"On. Add a reminder to any task with a start time.";
+    if(perm==="denied")info+=" Pop-up notifications are blocked in your browser settings.";
+    $("alarmInfo").textContent=info;
+    $("alarmToggle").textContent="Turn off alarms"; $("alarmToggle").className="alarm-btn off";
+  }
+}
+$("alarmToggle").onclick=async()=>{
+  alarmsOn=!alarmsOn; writeJSON(AL_ON,alarmsOn);
+  if(alarmsOn){
+    unlockAudio(); beep();
+    if("Notification" in window && Notification.permission==="default"){try{await Notification.requestPermission()}catch(e){}}
+    checkAlarms();
+  }
+  renderAlarmWidget();
+};
+// browsers only allow sound after a click, so unlock on the first interaction
+document.addEventListener("pointerdown",()=>{if(alarmsOn)unlockAudio()},{once:true});
+
+function ring(t){
+  ringing=t;
+  $("alarmEmoji").textContent=t.emoji||"⏰";
+  $("alarmTitle").textContent=t.title;
+  $("alarmWhen").textContent=(t.remind?`Starts in ${t.remind} min · `:"Starting now · ")+fmtTime(t.time);
+  if(!$("alarmDlg").open){ if($("dlg").open)$("dlg").close(); $("alarmDlg").showModal(); }
+  beep(); clearInterval(beepTimer); beepTimer=setInterval(beep,1500);
+  const orig="Daybook"; let flip=false; clearInterval(titleTimer);
+  titleTimer=setInterval(()=>{document.title=(flip=!flip)?"⏰ "+t.title:orig},1000);
+  if("Notification" in window && Notification.permission==="granted"){
+    try{const n=new Notification("⏰ "+t.title,{body:$("alarmWhen").textContent,tag:alarmKey(t),requireInteraction:true});n.onclick=()=>{window.focus();n.close()}}catch(e){}
+  }
+  setTimeout(()=>{if(ringing===t)stopRinging()},60000); // stop sound after 1 minute
+}
+function stopRinging(){
+  clearInterval(beepTimer); clearInterval(titleTimer); document.title="Daybook";
+  ringing=null; if($("alarmDlg").open)$("alarmDlg").close();
+}
+function checkAlarms(){
+  renderAlarmWidget();
+  if(!alarmsOn||ringing)return;
+  const now=Date.now(), fired=readJSON(AL_FIRED,{}), snooze=readJSON(AL_SNOOZE,{});
+  // snoozed alarms first
+  for(const [id,at] of Object.entries(snooze)){
+    if(now>=at){
+      delete snooze[id]; writeJSON(AL_SNOOZE,snooze);
+      const t=tasks.find(x=>x.id===id&&!x.done); if(t){ring(t);return}
+    }
+  }
+  for(const t of tasks){
+    const at=alarmAt(t), key=alarmKey(t);
+    if(at&&now>=at&&now-at<GRACE&&!fired[key]){
+      fired[key]=now;
+      // keep the list small
+      for(const k in fired) if(now-fired[k]>7*864e5) delete fired[k];
+      writeJSON(AL_FIRED,fired);
+      ring(t); return;
+    }
+  }
+}
+$("snoozeBtn").onclick=()=>{
+  if(!ringing)return;
+  const snooze=readJSON(AL_SNOOZE,{}); snooze[ringing.id]=Date.now()+5*60000; writeJSON(AL_SNOOZE,snooze);
+  stopRinging();
+};
+$("dismissBtn").onclick=stopRinging;
+$("alarmDoneBtn").onclick=()=>{
+  const t=ringing&&tasks.find(x=>x.id===ringing.id);
+  stopRinging();
+  if(t){t.done=true;render();persist({...t})}
+};
+$("alarmDlg").addEventListener("cancel",e=>{e.preventDefault();stopRinging()});
+setInterval(checkAlarms,5000);
+
 /* ---------- start ---------- */
 $("userEmail").textContent=session.user.email;
 $("signOutBtn").onclick=async()=>{await sb.auth.signOut();location.replace("login.html")};
@@ -437,7 +586,7 @@ render();
 
 const {data,error}=await sb.from("tasks").select("*").order("date");
 if(error){setStatus("Couldn't load tasks: "+error.message)}
-else{tasks=data.map(fromRow);setStatus("Synced with your account.");render()}
+else{tasks=data.map(fromRow);setStatus("Synced with your account.");render();checkAlarms()}
 
 // Live updates from your other devices (needs Realtime enabled on the table)
 sb.channel("tasks-live")
