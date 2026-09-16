@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sign in · Daybook</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<style>
+:root{
+  --bg:#E9ECF1; --panel:#FFFFFF; --card:#F3F4F7; --ink:#24252D; --muted:#8B8E99; --line:#E3E5EA;
+  --sun:#F6C75A; --sun-soft:#FBE3A6; --sun-ink:#5A4410; --sun-text:#C98E12; --danger:#D2493A;
+  --shadow:0 18px 40px rgba(40,45,60,.08);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#15161A; --panel:#1E1F25; --card:#26272E; --ink:#ECEDF1; --muted:#9A9DA8; --line:#2F3038;
+    --sun:#F2C04F; --sun-soft:#4A3C1A; --sun-ink:#2A1F05; --sun-text:#F2C04F; --shadow:0 18px 40px rgba(0,0,0,.35);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#15161A; --panel:#1E1F25; --card:#26272E; --ink:#ECEDF1; --muted:#9A9DA8; --line:#2F3038;
+  --sun:#F2C04F; --sun-soft:#4A3C1A; --sun-ink:#2A1F05; --sun-text:#F2C04F; --shadow:0 18px 40px rgba(0,0,0,.35);
+}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:var(--bg);color:var(--ink);font-family:Lexend,"Segoe UI",system-ui,sans-serif;display:grid;place-items:center;padding:20px}
+button,input{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--sun);outline-offset:2px}
+.card{width:min(860px,100%);background:var(--panel);border-radius:36px;box-shadow:var(--shadow);display:grid;grid-template-columns:1fr 1fr;overflow:hidden}
+.intro{background:var(--sun);color:var(--sun-ink);padding:44px 40px;display:flex;flex-direction:column;gap:18px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:600;font-size:17px}
+.mark{width:26px;height:26px;border-radius:50% 50% 50% 12%;background:var(--panel);color:var(--sun-text);display:grid;place-items:center;font-size:14px}
+.intro h1{font-weight:400;font-size:34px;line-height:1.15;margin:auto 0 0}
+.intro p{margin:0;font-size:14px;line-height:1.6;max-width:30ch}
+.preview{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+.preview div{background:rgba(255,255,255,.55);border-radius:12px;padding:10px 14px;font-size:13px;display:flex;justify-content:space-between}
+form{padding:44px 40px;display:flex;flex-direction:column;gap:14px}
+h2{margin:0;font-weight:400;font-size:26px}
+.sub{margin:0 0 8px;color:var(--muted);font-size:14px}
+label{font-size:12px;color:var(--muted);display:flex;flex-direction:column;gap:6px}
+input{background:var(--card);border:1px solid transparent;border-radius:12px;padding:12px 14px;font-size:15px}
+input:focus{outline:none;border-color:var(--sun)}
+.primary{margin-top:6px;border:0;border-radius:12px;padding:13px;background:var(--sun);color:var(--sun-ink);font-weight:500;cursor:pointer}
+.primary:disabled{opacity:.6;cursor:wait}
+.switch{font-size:13px;color:var(--muted);text-align:center;margin-top:4px}
+.switch button,.forgot{border:0;background:none;color:var(--sun-text);font-weight:500;cursor:pointer;padding:0}
+.forgot{font-size:12px;align-self:flex-end}
+.msg{font-size:13px;line-height:1.5;border-radius:10px;padding:10px 12px;display:none}
+.msg.error{display:block;background:rgba(210,73,58,.1);color:var(--danger)}
+.msg.ok{display:block;background:var(--sun-soft);color:var(--ink)}
+@media (max-width:720px){
+  .card{grid-template-columns:1fr;border-radius:28px}
+  .intro{padding:30px 28px}
+  .intro h1{font-size:28px;margin-top:10px}
+  .preview{display:none}
+  form{padding:30px 28px}
+}
+</style>
+</head>
+<body>
+<main class="card">
+  <section class="intro">
+    <div class="brand"><span class="mark">✓</span> Daybook</div>
+    <h1>Plan your day, from any device.</h1>
+    <p>Sign in to see your schedule, pinned tasks, and progress wherever you left off.</p>
+    <div class="preview" aria-hidden="true">
+      <div><span>🧘 Morning stretch</span><span>7:30 AM</span></div>
+      <div><span>💼 Team check-in</span><span>10:00 AM</span></div>
+    </div>
+  </section>
+
+  <form id="form" novalidate>
+    <h2 id="title">Welcome back</h2>
+    <p class="sub" id="subtitle">Sign in to your account.</p>
+    <div class="msg" id="msg" role="status"></div>
+    <label>Email<input type="email" id="email" autocomplete="email" required></label>
+    <label>Password<input type="password" id="password" autocomplete="current-password" minlength="6" required></label>
+    <button type="button" class="forgot" id="forgotBtn">Forgot password?</button>
+    <button type="submit" class="primary" id="submitBtn">Sign in</button>
+    <p class="switch"><span id="switchText">New here?</span> <button type="button" id="switchBtn">Create an account</button></p>
+  </form>
+</main>
+
+<script>
+(async function(){
+  const $=id=>document.getElementById(id);
+  const sb=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+  const APP="index.html";
+
+  // Already signed in? Go straight to the app.
+  const {data:{session}}=await sb.auth.getSession();
+  if(session){location.replace(APP);return}
+  sb.auth.onAuthStateChange((event,s)=>{if(s&&event==="SIGNED_IN")location.replace(APP)});
+
+  let mode="signin";
+  function show(type,text){const m=$("msg");m.className="msg "+type;m.textContent=text}
+  function setMode(next){
+    mode=next;
+    const up=mode==="signup";
+    $("title").textContent=up?"Create your account":"Welcome back";
+    $("subtitle").textContent=up?"Use at least 6 characters for your password.":"Sign in to your account.";
+    $("submitBtn").textContent=up?"Create account":"Sign in";
+    $("switchText").textContent=up?"Already have an account?":"New here?";
+    $("switchBtn").textContent=up?"Sign in":"Create an account";
+    $("password").autocomplete=up?"new-password":"current-password";
+    $("forgotBtn").style.display=up?"none":"";
+    $("msg").className="msg";
+  }
+  $("switchBtn").onclick=()=>setMode(mode==="signin"?"signup":"signin");
+
+  $("forgotBtn").onclick=async()=>{
+    const email=$("email").value.trim();
+    if(!email){show("error","Enter your email first, then select Forgot password.");$("email").focus();return}
+    const {error}=await sb.auth.resetPasswordForEmail(email,{redirectTo:location.origin+"/"+APP});
+    error?show("error",error.message):show("ok","Check your inbox for a password reset link.");
+  };
+
+  $("form").addEventListener("submit",async e=>{
+    e.preventDefault();
+    const email=$("email").value.trim(), password=$("password").value;
+    if(!email||!email.includes("@")){show("error","Enter a valid email address.");return}
+    if(password.length<6){show("error","Password must be at least 6 characters.");return}
+
+    $("submitBtn").disabled=true;
+    try{
+      if(mode==="signup"){
+        const {data,error}=await sb.auth.signUp({email,password,options:{emailRedirectTo:location.origin+"/"+APP}});
+        if(error)throw error;
+        if(data.session){location.replace(APP);return}
+        show("ok","Account created. Check your email and open the confirmation link to sign in.");
+        setMode("signin"); show("ok","Account created. Check your email and open the confirmation link, then sign in here.");
+      }else{
+        const {error}=await sb.auth.signInWithPassword({email,password});
+        if(error)throw error;
+        location.replace(APP);
+      }
+    }catch(err){
+      show("error",err.message==="Invalid login credentials"?"Email or password is incorrect.":err.message);
+    }finally{
+      $("submitBtn").disabled=false;
+    }
+  });
+})();
+</script>
+</body>
+</html>
