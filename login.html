@@ -11,64 +11,95 @@
 <script src="config.js"></script>
 <style>
 :root{
-  --bg:#E9ECF1; --panel:#FFFFFF; --card:#F3F4F7; --ink:#24252D; --muted:#8B8E99; --line:#E3E5EA;
-  --sun:#F6C75A; --sun-soft:#FBE3A6; --sun-ink:#5A4410; --sun-text:#C98E12; --danger:#D2493A;
-  --shadow:0 18px 40px rgba(40,45,60,.08);
+  --scene-a:#968878; --scene-b:#5E534A; --scene-c:#BFB2A3; --scene-d:#8A9486;
+  --glass:rgba(255,255,255,.13); --glass-strong:rgba(255,255,255,.2); --glass-hover:rgba(255,255,255,.24);
+  --edge:rgba(255,255,255,.32); --edge-soft:rgba(255,255,255,.14);
+  --ink:#FFFFFF; --muted:rgba(255,255,255,.72); --faint:rgba(255,255,255,.38); --line:rgba(255,255,255,.18);
+  --sun:#F6C75A; --sun-ink:#3B2C06; --sun-text:#FFD980; --danger:#FFB4A8;
+  --blur:blur(28px) saturate(150%);
+  --lift:0 24px 60px rgba(30,22,15,.28), inset 0 1px 0 rgba(255,255,255,.35);
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
-    --bg:#15161A; --panel:#1E1F25; --card:#26272E; --ink:#ECEDF1; --muted:#9A9DA8; --line:#2F3038;
-    --sun:#F2C04F; --sun-soft:#4A3C1A; --sun-ink:#2A1F05; --sun-text:#F2C04F; --shadow:0 18px 40px rgba(0,0,0,.35);
+    --scene-a:#3A342F; --scene-b:#15130F; --scene-c:#5C5046; --scene-d:#2E3A33;
+    --glass:rgba(255,255,255,.07); --glass-strong:rgba(255,255,255,.12); --glass-hover:rgba(255,255,255,.16);
+    --edge:rgba(255,255,255,.18); --edge-soft:rgba(255,255,255,.08);
+    --lift:0 24px 60px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.12);
   }
 }
 :root[data-theme="dark"]{
-  --bg:#15161A; --panel:#1E1F25; --card:#26272E; --ink:#ECEDF1; --muted:#9A9DA8; --line:#2F3038;
-  --sun:#F2C04F; --sun-soft:#4A3C1A; --sun-ink:#2A1F05; --sun-text:#F2C04F; --shadow:0 18px 40px rgba(0,0,0,.35);
+  --scene-a:#3A342F; --scene-b:#15130F; --scene-c:#5C5046; --scene-d:#2E3A33;
+  --glass:rgba(255,255,255,.07); --glass-strong:rgba(255,255,255,.12); --glass-hover:rgba(255,255,255,.16);
+  --edge:rgba(255,255,255,.18); --edge-soft:rgba(255,255,255,.08);
+  --lift:0 24px 60px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.12);
 }
 *{box-sizing:border-box}
-body{margin:0;min-height:100vh;background:var(--bg);color:var(--ink);font-family:Lexend,"Segoe UI",system-ui,sans-serif;display:grid;place-items:center;padding:20px}
-button,input{font:inherit;color:inherit}
+html{background:var(--scene-b)}
+body{margin:0;min-height:100vh;color:var(--ink);font-family:Lexend,"Segoe UI",system-ui,sans-serif;font-weight:400;position:relative;overflow-x:hidden}
+/* the soft "room" behind the glass */
+.scene{position:fixed;inset:0;z-index:-1;overflow:hidden;
+  background:
+    radial-gradient(60% 50% at 18% 20%, var(--scene-c) 0%, transparent 70%),
+    radial-gradient(45% 45% at 85% 85%, var(--scene-d) 0%, transparent 70%),
+    linear-gradient(160deg,var(--scene-a) 0%,var(--scene-b) 100%);}
+.scene i{position:absolute;border-radius:50%;filter:blur(70px);opacity:.55}
+.scene i:nth-child(1){width:42vw;height:42vw;left:-8vw;bottom:-14vw;background:#D9CAB6}
+.scene i:nth-child(2){width:30vw;height:30vw;right:6vw;top:-8vw;background:#C7B39E}
+.scene i:nth-child(3){width:22vw;height:22vw;left:44vw;top:40vh;background:#F6C75A;opacity:.18}
+.scene::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,0) 40%,rgba(0,0,0,.18));}
+button,input,textarea,select{font:inherit;color:inherit}
+button{cursor:pointer;border:0;background:none}
 :focus-visible{outline:2px solid var(--sun);outline-offset:2px}
-.card{width:min(860px,100%);background:var(--panel);border-radius:36px;box-shadow:var(--shadow);display:grid;grid-template-columns:1fr 1fr;overflow:hidden}
-.intro{background:var(--sun);color:var(--sun-ink);padding:44px 40px;display:flex;flex-direction:column;gap:18px}
-.brand{display:flex;align-items:center;gap:10px;font-weight:600;font-size:17px}
-.mark{width:26px;height:26px;border-radius:50% 50% 50% 12%;background:var(--panel);color:var(--sun-text);display:grid;place-items:center;font-size:14px}
-.intro h1{font-weight:400;font-size:34px;line-height:1.15;margin:auto 0 0}
-.intro p{margin:0;font-size:14px;line-height:1.6;max-width:30ch}
-.preview{display:flex;flex-direction:column;gap:8px;margin-top:10px}
-.preview div{background:rgba(255,255,255,.55);border-radius:12px;padding:10px 14px;font-size:13px;display:flex;justify-content:space-between}
-form{padding:44px 40px;display:flex;flex-direction:column;gap:14px}
-h2{margin:0;font-weight:400;font-size:26px}
+.pane{background:var(--glass);-webkit-backdrop-filter:var(--blur);backdrop-filter:var(--blur);border:1px solid var(--edge-soft);border-top-color:var(--edge);box-shadow:var(--lift)}
+body{display:grid;place-items:center;padding:24px}
+.card{width:min(900px,100%);border-radius:36px;display:grid;grid-template-columns:1.05fr 1fr;overflow:hidden;padding:10px;gap:10px}
+.intro{border-radius:28px;padding:34px;display:flex;flex-direction:column;gap:16px;background:linear-gradient(140deg,rgba(255,255,255,.2),rgba(255,255,255,.04));border:1px solid var(--edge-soft);position:relative;overflow:hidden}
+.intro::after{content:"";position:absolute;right:-90px;bottom:-110px;width:280px;height:280px;border-radius:50%;background:radial-gradient(circle,rgba(246,199,90,.4),rgba(246,199,90,0) 70%);pointer-events:none}
+.brand{display:flex;align-items:center;gap:10px;font-weight:600;font-size:20px}
+.mark{width:28px;height:28px;border-radius:50% 50% 50% 12px;background:var(--sun);color:var(--sun-ink);display:grid;place-items:center;font-size:14px}
+.intro h1{font-weight:600;font-size:38px;line-height:1.08;letter-spacing:-.02em;margin:auto 0 0;max-width:14ch}
+.intro p{margin:0;font-size:14px;line-height:1.6;color:var(--muted);max-width:32ch}
+.preview{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+.preview div{background:rgba(255,255,255,.12);border:1px solid var(--edge-soft);border-radius:16px;padding:8px 14px 8px 8px;font-size:13px;display:flex;align-items:center;gap:10px}
+.preview span.e{width:30px;height:30px;border-radius:9px;background:rgba(255,255,255,.16);display:grid;place-items:center}
+.preview span.t{margin-left:auto;color:var(--muted);font-size:12px}
+form{padding:28px 26px;display:flex;flex-direction:column;gap:14px}
+h2{margin:0;font-weight:600;font-size:28px;letter-spacing:-.01em}
 .sub{margin:0 0 8px;color:var(--muted);font-size:14px}
 label{font-size:12px;color:var(--muted);display:flex;flex-direction:column;gap:6px}
-input{background:var(--card);border:1px solid transparent;border-radius:12px;padding:12px 14px;font-size:15px}
-input:focus{outline:none;border-color:var(--sun)}
-.primary{margin-top:6px;border:0;border-radius:12px;padding:13px;background:var(--sun);color:var(--sun-ink);font-weight:500;cursor:pointer}
+input{background:rgba(255,255,255,.12);border:1px solid var(--edge-soft);border-radius:14px;padding:12px 14px;font-size:15px;color:var(--ink)}
+input::placeholder{color:var(--faint)}
+input:focus{outline:none;border-color:var(--sun);background:rgba(255,255,255,.16)}
+.primary{margin-top:6px;border:0;border-radius:30px;padding:13px;background:var(--sun);color:var(--sun-ink);font-weight:600;cursor:pointer;box-shadow:0 8px 22px rgba(246,199,90,.35)}
+.primary:hover{filter:brightness(1.05)}
 .primary:disabled{opacity:.6;cursor:wait}
 .switch{font-size:13px;color:var(--muted);text-align:center;margin-top:4px}
 .switch button,.forgot{border:0;background:none;color:var(--sun-text);font-weight:500;cursor:pointer;padding:0}
 .forgot{font-size:12px;align-self:flex-end}
-.msg{font-size:13px;line-height:1.5;border-radius:10px;padding:10px 12px;display:none}
-.msg.error{display:block;background:rgba(210,73,58,.1);color:var(--danger)}
-.msg.ok{display:block;background:var(--sun-soft);color:var(--ink)}
-@media (max-width:720px){
-  .card{grid-template-columns:1fr;border-radius:28px}
-  .intro{padding:30px 28px}
-  .intro h1{font-size:28px;margin-top:10px}
+.msg{font-size:13px;line-height:1.5;border-radius:14px;padding:10px 12px;display:none;border:1px solid var(--edge-soft)}
+.msg.error{display:block;background:rgba(210,73,58,.25);color:#FFE3DE}
+.msg.ok{display:block;background:rgba(246,199,90,.22);color:var(--ink)}
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){ .pane{background:rgba(70,60,52,.85)} }
+@media (max-width:760px){
+  .card{grid-template-columns:1fr;border-radius:30px}
+  .intro{padding:26px}
+  .intro h1{font-size:30px;margin-top:14px}
   .preview{display:none}
-  form{padding:30px 28px}
+  form{padding:22px 16px}
 }
 </style>
 </head>
 <body>
-<main class="card">
+<div class="scene" aria-hidden="true"><i></i><i></i><i></i></div>
+<main class="card pane">
   <section class="intro">
     <div class="brand"><span class="mark">✓</span> Daybook</div>
     <h1>Plan your day, from any device.</h1>
     <p>Sign in to see your schedule, pinned tasks, and progress wherever you left off.</p>
     <div class="preview" aria-hidden="true">
-      <div><span>🧘 Morning stretch</span><span>7:30 AM</span></div>
-      <div><span>💼 Team check-in</span><span>10:00 AM</span></div>
+      <div><span class="e">🧘</span>Morning stretch<span class="t">7:30 AM</span></div>
+      <div><span class="e">💼</span>Team check-in<span class="t">10:00 AM</span></div>
+      <div><span class="e">🎮</span>Game night<span class="t">8:00 PM</span></div>
     </div>
   </section>
 
