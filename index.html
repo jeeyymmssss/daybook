@@ -147,6 +147,13 @@ button.avatar:hover{box-shadow:0 0 0 3px rgba(246,199,90,.5)}
 .pf-actions{display:flex;flex-direction:column;gap:8px;align-items:flex-start}
 .pf-actions .btn{padding:8px 16px;font-size:13px}
 .pf-msg{min-height:18px}
+.at-wrap{position:relative;display:block}
+.at-wrap .at{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none;font-size:14px}
+.at-wrap input{padding-left:28px !important}
+.hint{font-size:11px;color:var(--muted);min-height:15px}
+.hint.good{color:#BDF2C4}
+.hint.bad{color:var(--danger)}
+.pf-intro{margin:-4px 0 4px;font-size:13px;color:var(--muted);line-height:1.5}
 .pf-msg.error{color:var(--danger)}
 input:disabled{opacity:.6}
 .clock{font-size:40px;font-weight:300;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
@@ -422,6 +429,7 @@ dialog>*{transition:opacity .25s ease}
 <dialog id="profileDlg" aria-labelledby="pfTitle">
   <form id="profileForm" method="dialog">
     <h3 id="pfTitle">Your profile</h3>
+    <p class="pf-intro" id="pfIntro" hidden>Pick a username. You can use it to sign in instead of your email, and change it anytime.</p>
     <div class="pf-top">
       <div class="pf-avatar" id="pfAvatar"></div>
       <div class="pf-actions">
@@ -431,6 +439,10 @@ dialog>*{transition:opacity .25s ease}
       </div>
     </div>
     <input type="file" id="pfFile" accept="image/png,image/jpeg,image/webp,image/gif" hidden>
+    <label>Username
+      <span class="at-wrap"><span class="at">@</span><input type="text" id="pfUser" maxlength="20" spellcheck="false" autocapitalize="off" autocomplete="username" placeholder="yourname"></span>
+      <span class="hint" id="pfUserHint">You can sign in with this instead of your email.</span>
+    </label>
     <label>Display name<input type="text" id="pfName" maxlength="40" placeholder="What should we call you?" autocomplete="nickname"></label>
     <label>Email<input type="text" id="pfEmail" disabled></label>
     <div class="pf-msg w-sub" id="pfMsg" role="status"></div>
@@ -961,6 +973,18 @@ document.querySelectorAll("dialog").forEach(dlg=>{
 /* ---------- start ---------- */
 /* ---------- profile ---------- */
 let currentUser=session.user, pfBlob=null, pfPreviewUrl=null, pfRemove=false;
+let username=null, usernameLoaded=false, pfSetup=false;
+const USER_RE=/^[a-z0-9_.]{3,20}$/;
+const cleanName=v=>v.trim().replace(/^@/,"").toLowerCase();
+function pfHint(text,kind){const h=$("pfUserHint");h.textContent=text;h.className="hint"+(kind?" "+kind:"")}
+async function loadUsername(){
+  const {data,error}=await sb.from("profiles").select("username").eq("id",currentUser.id).maybeSingle();
+  if(error){console.warn("profiles:",error.message);return}
+  usernameLoaded=true;
+  username=data?data.username:null;
+  applyProfile(currentUser);
+  if(!username){pfSetup=true;openProfile()}
+}
 function avatarHTML(url,name,email){
   if(url)return `<img src="${esc(url)}" alt="">`;
   const letter=((name||email||"?").trim()[0]||"?").toUpperCase();
@@ -969,8 +993,8 @@ function avatarHTML(url,name,email){
 function applyProfile(user){
   const m=user.user_metadata||{};
   profileName=(m.display_name||"").trim();
-  $("userEmail").textContent=profileName||user.email;
-  $("userEmail").title=user.email;
+  $("userEmail").textContent=profileName||(username?"@"+username:user.email);
+  $("userEmail").title=(username?"@"+username+" · ":"")+user.email;
   $("avatarInner").outerHTML=`<span id="avatarInner" style="display:contents">${avatarHTML(m.avatar_url,profileName,user.email)}</span>`;
   tick();
 }
@@ -986,6 +1010,11 @@ function openProfile(){
   pfBlob=null; pfRemove=false;
   if(pfPreviewUrl){URL.revokeObjectURL(pfPreviewUrl);pfPreviewUrl=null}
   $("pfName").value=m.display_name||"";
+  $("pfUser").value=username||"";
+  pfHint(username?"You can sign in with @"+username+" or your email.":"You can sign in with this instead of your email.");
+  $("pfIntro").hidden=!pfSetup;
+  $("pfTitle").textContent=pfSetup?"Choose a username":"Your profile";
+  $("pfCancel").hidden=pfSetup;
   $("pfEmail").value=currentUser.email;
   pfMsg("");
   pfPreview();
@@ -1009,6 +1038,25 @@ function squareImage(file,size=256){
 $("profileBtn").onclick=openProfile;
 $("avatarBtn").onclick=openProfile;
 $("pfCancel").onclick=()=>$("profileDlg").close();
+$("profileDlg").addEventListener("cancel",e=>{if(pfSetup)e.preventDefault()});
+let pfCheckTimer=null;
+$("pfUser").addEventListener("input",()=>{
+  const el=$("pfUser"), pos=el.selectionStart, low=el.value.toLowerCase().replace(/\s/g,"");
+  if(low!==el.value){el.value=low;try{el.setSelectionRange(pos,pos)}catch(e){}}
+  pfMsg("");
+  const name=cleanName(el.value);
+  clearTimeout(pfCheckTimer);
+  if(!name){pfHint("Choose a username to sign in with.");return}
+  if(name===username){pfHint("This is your current username.");return}
+  if(!USER_RE.test(name)){pfHint("Use 3–20 characters: letters, numbers, dots, or underscores.","bad");return}
+  pfHint("Checking…");
+  pfCheckTimer=setTimeout(async()=>{
+    const {data,error}=await sb.rpc("username_available",{p_username:name});
+    if(cleanName($("pfUser").value)!==name)return;
+    if(error)pfHint("Couldn't check right now.","bad");
+    else pfHint(data?"@"+name+" is available":"@"+name+" is taken",data?"good":"bad");
+  },400);
+});
 $("pfPick").onclick=()=>$("pfFile").click();
 $("pfName").oninput=pfPreview;
 $("pfFile").onchange=async()=>{
@@ -1035,7 +1083,23 @@ $("profileForm").addEventListener("submit",async e=>{
   const btn=$("pfSave"); btn.disabled=true; pfMsg("Saving…");
   const old=currentUser.user_metadata||{};
   const meta={display_name:$("pfName").value.trim()};
+  const newName=cleanName($("pfUser").value);
   try{
+    if(pfSetup&&!newName){$("pfUser").focus();throw new Error("Choose a username to continue.")}
+    if(usernameLoaded&&newName!==(username||"")){
+      if(!USER_RE.test(newName))throw new Error("Choose a username with 3–20 letters, numbers, dots, or underscores.");
+      const q=username
+        ? sb.from("profiles").update({username:newName,updated_at:new Date().toISOString()}).eq("id",currentUser.id)
+        : sb.from("profiles").insert({id:currentUser.id,username:newName});
+      const {error}=await q;
+      if(error){
+        if(error.code==="23505")throw new Error("@"+newName+" is already taken. Try another username.");
+        if(error.code==="23514")throw new Error("Choose a username with 3–20 letters, numbers, dots, or underscores.");
+        throw new Error("Couldn't save your username: "+error.message);
+      }
+      username=newName;
+      pfSetup=false;
+    }
     if(pfBlob){
       const path=`${currentUser.id}/avatar-${Date.now()}.jpg`;
       const up=await sb.storage.from("avatars").upload(path,pfBlob,{contentType:"image/jpeg",upsert:true});
@@ -1060,6 +1124,7 @@ $("profileForm").addEventListener("submit",async e=>{
   finally{btn.disabled=false}
 });
 applyProfile(currentUser);
+loadUsername();
 $("signOutBtn").onclick=async()=>{await sb.auth.signOut();location.replace("login.html")};
 sb.auth.onAuthStateChange((event)=>{if(event==="SIGNED_OUT")location.replace("login.html")});
 
