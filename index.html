@@ -190,6 +190,12 @@ input:focus,textarea:focus,select:focus{border-color:var(--sun);outline:none}
 textarea{min-height:70px;resize:vertical}
 .two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .emojis{display:flex;flex-wrap:wrap;gap:6px}
+.emo{width:64%;height:64%;object-fit:contain;display:block;pointer-events:none;user-select:none;filter:drop-shadow(0 2px 3px rgba(0,0,0,.18))}
+.emo.inline{display:inline-block;width:14px;height:14px;vertical-align:-2px;filter:none}
+.emojis .emo{width:24px;height:24px}
+.alarm-emoji .emo{width:48px;height:48px}
+.emojis button{display:grid;place-items:center}
+.emojis button[aria-pressed=true] .emo{transform:scale(1.12)}
 .emojis button{width:36px;height:36px;border-radius:10px;background:rgba(255,255,255,.1);font-size:18px}
 .emojis button[aria-pressed=true]{background:var(--sun)}
 .check-line{flex-direction:row;align-items:center;gap:8px;color:var(--ink);font-size:13px}
@@ -456,11 +462,20 @@ if(!session){location.replace("login.html");return}
 document.body.classList.remove("checking");
 if(!matchMedia("(prefers-reduced-motion: reduce)").matches){document.body.classList.add("ready");setTimeout(()=>document.body.classList.remove("ready"),1600)}
 
-const EMOJIS=["⏰","🧘","🏋️","💼","🍣","🎨","📞","🎂","📚","🛒","🧹","💊"];
+const EMOJIS=["⏰","🧘","🏋️","💼","🍣","🎨","📞","🎂","📚","🛒","🧹","💊","🎮"];
 const $=id=>document.getElementById(id);
 const pad=n=>String(n).padStart(2,"0");
 const iso=d=>d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());
 const parse=s=>{const[y,m,d]=s.split("-").map(Number);return new Date(y,m-1,d)};
+/* 3D emoji: Microsoft Fluent Emoji (MIT). Apple devices keep their own emoji. */
+const USE_NATIVE_EMOJI=/Mac|iPhone|iPad|iPod/i.test((navigator.userAgentData&&navigator.userAgentData.platform)||navigator.platform||navigator.userAgent||"");
+const EMOJI_FILES={"⏰":"alarm_clock","🧘":"lotus","🏋":"weights","💼":"briefcase","🍣":"sushi","🎨":"palette","📞":"phone","🎂":"cake","📚":"books","🛒":"cart","🧹":"broom","💊":"pill","🎮":"game","☀":"sun","🌤":"sun_cloud","🔔":"bell"};
+function emo(e,cls=""){
+  const key=String(e||"").replace(/\uFE0F/g,"");
+  const file=EMOJI_FILES[key];
+  if(!file||USE_NATIVE_EMOJI)return `<span class="emo-txt ${cls}">${esc(e)}</span>`;
+  return `<img class="emo ${cls}" src="emoji/${file}.png" alt="${esc(e)}" draggable="false" onerror="this.replaceWith(document.createTextNode(this.alt))">`;
+}
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const fmtTime=t=>{if(!t)return"";let[h,m]=t.split(":").map(Number);const ap=h>=12?"PM":"AM";h=h%12||12;return h+":"+pad(m)+" "+ap};
 const MONTHS=["January","February","March","April","May","June","July","August","September","October","November","December"];
@@ -510,9 +525,9 @@ function renderTimeline(){
       return `<div class="row${isNew?" pop-in":""}">
         <button class="check ${t.done?"on":""}${justDone?" just":""}" data-toggle="${t.id}" aria-label="${t.done?"Mark not done":"Mark done"}: ${esc(t.title)}">${t.done?"✓":""}</button>
         <button class="task ${t.done?"done":""}" data-edit="${t.id}">
-          <span class="icon">${esc(t.emoji)}</span>
+          <span class="icon">${emo(t.emoji)}</span>
           <span><div class="t-title">${esc(t.title)}</div>${notes}</span>
-          <span class="t-time">${fmtTime(t.time)}${t.end?"<br>"+fmtTime(t.end):""}${t.remind>=0&&t.time?`<span class="bell" title="Reminder set">🔔 ${t.remind?t.remind+"m before":"on time"}</span>`:""}</span>
+          <span class="t-time">${fmtTime(t.time)}${t.end?"<br>"+fmtTime(t.end):""}${t.remind>=0&&t.time?`<span class="bell" title="Reminder set">${emo("🔔","inline")} ${t.remind?t.remind+"m before":"on time"}</span>`:""}</span>
         </button></div>`;
     }).join("");
   }
@@ -533,7 +548,7 @@ function renderPins(){
   $("pins").innerHTML=pins.map(t=>{
     const d=parse(t.date);
     return `<button class="pin" data-jump="${t.id}">
-      <span class="icon">${esc(t.emoji)}</span>
+      <span class="icon">${emo(t.emoji)}</span>
       <span><div class="pin-title">${esc(t.title)}</div>
       <div class="pin-meta">${d.getDate()} ${MONTHS[d.getMonth()].slice(0,3)} ${d.getFullYear()}${t.time?" · "+fmtTime(t.time):""}</div>
       <span class="tag">${esc(t.tag)}</span>
@@ -566,7 +581,7 @@ function renderNext(){
   const now=new Date(), today=iso(now), hm=pad(now.getHours())+":"+pad(now.getMinutes());
   const up=sortTasks(tasks.filter(t=>!t.done && (t.date>today || (t.date===today && (!t.time||t.time>=hm)))))
     .sort((a,b)=>a.date.localeCompare(b.date))[0];
-  $("nextUp").innerHTML=up?`<div class="next"><span class="icon">${esc(up.emoji)}</span><div><div class="w-title">${esc(up.title)}</div><div class="w-sub" style="margin-top:2px">${up.date===today?"Today":parse(up.date).toDateString().slice(0,10)}${up.time?" · "+fmtTime(up.time):""}</div></div></div>`
+  $("nextUp").innerHTML=up?`<div class="next"><span class="icon">${emo(up.emoji)}</span><div><div class="w-title">${esc(up.title)}</div><div class="w-sub" style="margin-top:2px">${up.date===today?"Today":parse(up.date).toDateString().slice(0,10)}${up.time?" · "+fmtTime(up.time):""}</div></div></div>`
     :`<div class="w-sub">You're all caught up.</div>`;
 }
 
@@ -583,7 +598,7 @@ function renderNowBar(){
   const next=todays.find(t=>toMin(t.time)>mins);
   const show=cur||next;
   nowTask=show||null;
-  $("nbIcon").textContent=show?show.emoji:"☀️";
+  $("nbIcon").innerHTML=emo(show?show.emoji:"☀️");
   $("nbTitle").textContent=show?show.title:"Nothing else today";
   $("nbSub").textContent=cur?"Now · until "+fmtTime(cur.end||(()=>{const e=toMin(cur.time)+60;return pad(Math.floor(e/60)%24)+":"+pad(e%60)})()):next?"Next · "+fmtTime(next.time):"Add a task to plan ahead";
   $("nbBar").style.width=cur?Math.round(frac*100)+"%":"0%";
@@ -600,7 +615,7 @@ function tick(){
 
 /* ---------- form ---------- */
 function renderEmojis(){
-  $("emojis").innerHTML=EMOJIS.map(e=>`<button type="button" data-emoji="${e}" aria-pressed="${e===chosenEmoji}">${e}</button>`).join("");
+  $("emojis").innerHTML=EMOJIS.map(e=>`<button type="button" data-emoji="${e}" aria-pressed="${e===chosenEmoji}" aria-label="Icon ${e}">${emo(e)}</button>`).join("");
 }
 function openForm(id=null,pin=false){
   editingId=id;
@@ -803,7 +818,7 @@ document.addEventListener("pointerdown",()=>{
 
 function ring(t){
   ringing=t;
-  $("alarmEmoji").textContent=t.emoji||"⏰";
+  $("alarmEmoji").innerHTML=emo(t.emoji||"⏰");
   $("alarmTitle").textContent=t.title;
   $("alarmWhen").textContent=(t.remind?`Starts in ${t.remind} min · `:"Starting now · ")+fmtTime(t.time);
   if(!$("alarmDlg").open){ if($("dlg").open)$("dlg").close(); $("alarmDlg").showModal(); }
