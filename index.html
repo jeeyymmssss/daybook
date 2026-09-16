@@ -379,6 +379,52 @@ body.ready .rail{animation:railIn 1s var(--spring-soft) .2s both}
 .nb-track.bump{animation:popIn .6s var(--spring-soft)}
 ::view-transition-old(root),::view-transition-new(root){animation:none;mix-blend-mode:normal}
 dialog>*{transition:opacity .25s ease}
+/* ---------- glass dropdowns + account menu ---------- */
+:root{--menu-bg:rgba(84,73,64,.66)}
+:root[data-theme="dark"]{--menu-bg:rgba(28,26,24,.74)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--menu-bg:rgba(28,26,24,.74)}}
+.gsel{position:relative;display:block}
+.gsel>select{position:absolute;inset:0;opacity:0;pointer-events:none;width:100%;height:100%}
+.gsel-btn{width:100%;display:flex;align-items:center;justify-content:space-between;gap:10px;background:rgba(255,255,255,.12);border:1px solid var(--edge-soft);border-radius:12px;padding:10px 12px;font-size:14px;text-align:left;color:var(--ink)}
+.gsel-btn:hover{background:rgba(255,255,255,.17)}
+.gsel-btn[aria-expanded=true]{border-color:var(--sun);background:rgba(255,255,255,.18)}
+.gsel-btn span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gsel-btn svg{width:15px;height:15px;flex:none;color:var(--muted);transition:transform .3s var(--spring-soft)}
+.gsel-btn[aria-expanded=true] svg{transform:rotate(180deg)}
+.gsel-btn:active:not(:disabled){transform:scale(.985)}
+.gsel.mini{display:inline-block}
+.gsel.mini .gsel-btn{padding:5px 10px;font-size:11px;border-radius:14px;gap:6px}
+.gsel.mini .gsel-btn svg{width:12px;height:12px}
+.glass-pop{position:fixed;inset:auto;margin:0;padding:6px;border-radius:22px;border:1px solid var(--edge);color:var(--ink);background:var(--menu-bg);
+  -webkit-backdrop-filter:blur(34px) saturate(170%);backdrop-filter:blur(34px) saturate(170%);
+  box-shadow:0 26px 60px rgba(20,14,10,.38),inset 0 1px 0 rgba(255,255,255,.28);overflow:auto;overscroll-behavior:contain}
+.glass-pop::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:linear-gradient(125deg,rgba(255,255,255,.14),rgba(255,255,255,0) 40%,rgba(255,255,255,.08) 60%,rgba(255,255,255,0) 80%)}
+.gsel-opt,.gmenu-item{position:relative;display:flex;align-items:center;gap:12px;width:100%;padding:10px 14px;border-radius:16px;font-size:14px;text-align:left;color:var(--ink);border:1px solid transparent}
+.gsel-opt:hover,.gsel-opt.active,.gmenu-item:hover,.gmenu-item:focus-visible{background:rgba(255,255,255,.15);border-color:rgba(255,255,255,.14);box-shadow:inset 0 1px 0 rgba(255,255,255,.2),0 6px 16px rgba(0,0,0,.12);outline:none}
+.gsel-opt:active,.gmenu-item:active{transform:scale(.98)}
+.gsel-opt .tick{width:16px;height:16px;margin-left:auto;color:var(--sun);opacity:0}
+.gsel-opt[aria-selected=true]{font-weight:500}
+.gsel-opt[aria-selected=true] .tick{opacity:1}
+.gmenu{width:250px;padding:8px}
+.gmenu.match{width:auto}
+.gmenu-item svg{width:19px;height:19px;flex:none;color:var(--muted)}
+.gmenu-item:hover svg{color:var(--ink)}
+.gmenu-sep{height:1px;background:var(--line);margin:6px 10px}
+.gmenu-item.danger{color:var(--danger)}
+.gmenu-item.danger svg{color:var(--danger)}
+.switch{margin-left:auto;width:40px;height:24px;border-radius:20px;background:rgba(255,255,255,.14);border:1px solid var(--edge-soft);position:relative;flex:none;transition:background .3s}
+.switch::after{content:"";position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:rgba(255,255,255,.85);box-shadow:0 2px 6px rgba(0,0,0,.25);transition:transform .35s var(--spring)}
+.switch.on{background:var(--sun)}
+.switch.on::after{transform:translateX(16px);background:#fff}
+.user{padding:0}
+.user-trigger{width:100%;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:7px 7px 7px 18px;border-radius:40px;text-align:left}
+.user-trigger:hover{background:rgba(255,255,255,.08)}
+.user-trigger[aria-expanded=true]{background:rgba(255,255,255,.12)}
+.user-trigger:active:not(:disabled){transform:scale(.98)}
+.user-sub{display:block;font-size:11px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:180px;margin-top:1px}
+.user-trigger .user-name{display:block}
+.user-trigger .avatar{transition:box-shadow .2s}
+.user-trigger:hover .avatar{box-shadow:0 0 0 3px rgba(246,199,90,.45)}
 /* ---------- scrollbars ---------- */
 ::-webkit-scrollbar{width:10px;height:10px}
 ::-webkit-scrollbar-track,::-webkit-scrollbar-corner{background:transparent}
@@ -499,15 +545,10 @@ dialog>form::-webkit-scrollbar-track{margin:22px 0}
 
   <aside class="right">
     <div class="user pane">
-      <div class="user-text">
-        <div class="user-name" id="userEmail">My day</div>
-        <div class="user-links">
-          <button class="theme-btn" id="profileBtn">Edit profile</button>·
-          <button class="theme-btn" id="themeBtn">Theme</button>·
-          <button class="theme-btn" id="signOutBtn">Sign out</button>
-        </div>
-      </div>
-      <button class="avatar" id="avatarBtn" aria-label="Edit profile"><span id="avatarInner">🌤️</span></button>
+      <button type="button" class="user-trigger" id="userMenuBtn" aria-haspopup="menu" aria-expanded="false" aria-controls="userMenu">
+        <span class="user-text"><span class="user-name" id="userEmail">My day</span><span class="user-sub" id="userSub">Account</span></span>
+        <span class="avatar" id="avatarBtn" aria-hidden="true"><span id="avatarInner">🌤️</span></span>
+      </button>
     </div>
     <div class="view" data-view="planner">
     <div class="widget pane">
@@ -548,7 +589,7 @@ dialog>form::-webkit-scrollbar-track{margin:22px 0}
     <div class="view" data-view="budget">
     <div class="widget pane">
       <div class="w-head"><div class="w-title">Statistics</div>
-        <select class="mini-select" id="bPeriod" aria-label="Period">
+        <select class="mini-select" data-mini id="bPeriod" aria-label="Period">
           <option value="month">This month</option>
           <option value="week">Last 7 days</option>
           <option value="year">This year</option>
@@ -642,6 +683,15 @@ dialog>form::-webkit-scrollbar-track{margin:22px 0}
     </div>
   </form>
 </dialog>
+
+<div class="glass-pop gmenu" id="userMenu" popover="manual" role="menu" aria-label="Account">
+  <button type="button" class="gmenu-item" role="menuitem" id="profileBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>Edit profile</button>
+  <button type="button" class="gmenu-item" role="menuitemcheckbox" aria-checked="false" id="themeBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9z"/></svg>Dark mode<span class="switch" id="themeSwitch" aria-hidden="true"></span></button>
+  <button type="button" class="gmenu-item" role="menuitem" id="menuBudget"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/></svg>Budget settings</button>
+  <button type="button" class="gmenu-item" role="menuitem" id="menuAlarms"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>Alarm settings</button>
+  <div class="gmenu-sep" role="separator"></div>
+  <button type="button" class="gmenu-item danger" role="menuitem" id="signOutBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/></svg>Sign out</button>
+</div>
 
 <dialog id="txDlg" aria-labelledby="txTitle">
   <form id="txForm" method="dialog" novalidate>
@@ -940,7 +990,10 @@ function flipTheme(){
   const dark=root.dataset.theme?root.dataset.theme==="dark":matchMedia("(prefers-color-scheme: dark)").matches;
   root.dataset.theme=dark?"light":"dark";
   try{localStorage.setItem("daybook-theme",root.dataset.theme)}catch(e){}
+  syncThemeSwitch();
 }
+function isDarkTheme(){const r=document.documentElement;return r.dataset.theme?r.dataset.theme==="dark":matchMedia("(prefers-color-scheme: dark)").matches}
+function syncThemeSwitch(){const on=isDarkTheme();$("themeSwitch").classList.toggle("on",on);$("themeBtn").setAttribute("aria-checked",String(on))}
 $("themeBtn").onclick=()=>{
   if(!document.startViewTransition||matchMedia("(prefers-reduced-motion: reduce)").matches){flipTheme();return}
   const {x,y}=lastPointer;
@@ -952,6 +1005,7 @@ $("themeBtn").onclick=()=>{
   }).catch(()=>{});
 };
 try{const th=localStorage.getItem("daybook-theme");if(th)document.documentElement.dataset.theme=th}catch(e){}
+syncThemeSwitch();
 
 /* ---------- alarms ---------- */
 const AL_ON="daybook-alarms-on", AL_FIRED="daybook-fired", AL_SNOOZE="daybook-snooze";
@@ -1196,6 +1250,144 @@ document.querySelectorAll("dialog").forEach(dlg=>{
   };
 });
 
+/* ---------- glass popovers: dropdown fields + account menu ---------- */
+const HAS_POPOVER=typeof HTMLElement!=="undefined"&&HTMLElement.prototype.hasOwnProperty("popover");
+const CHEVRON='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>';
+const TICK='<svg class="tick" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>';
+let openPop=null; // {pop, anchor, close}
+function placePop(pop,anchor,align){
+  const r=anchor.getBoundingClientRect(), gap=8, vw=innerWidth, vh=innerHeight;
+  pop.style.minWidth=align==="stretch"?r.width+"px":"";
+  const pw=pop.offsetWidth, ph=pop.offsetHeight;
+  let left=align==="end"?r.right-pw:r.left;
+  left=Math.max(8,Math.min(left,vw-pw-8));
+  const below=vh-r.bottom-gap-8, above=r.top-gap-8;
+  let top, maxH;
+  if(below>=Math.min(ph,220)||below>=above){top=r.bottom+gap;maxH=below}
+  else{maxH=above;top=Math.max(8,r.top-gap-Math.min(ph,above))}
+  pop.style.maxHeight=Math.max(120,maxH)+"px";
+  pop.style.left=left+"px"; pop.style.top=top+"px";
+  return top<r.top?"up":"down";
+}
+function showPop(pop,anchor,align,onClose){
+  if(openPop)openPop.close(false);
+  pop.showPopover();
+  const dir=placePop(pop,anchor,align);
+  anchor.setAttribute("aria-expanded","true");
+  if(!reduceMotion()&&pop.animate){
+    pop.animate([{opacity:0,transform:`translateY(${dir==="up"?6:-6}px) scale(.97)`,filter:"blur(4px)"},{opacity:1,transform:"none",filter:"none"}],{duration:260,easing:"cubic-bezier(.2,.9,.3,1)"});
+  }
+  const state={pop,anchor,align,close(refocus=true){
+    if(openPop!==state)return;
+    openPop=null;
+    anchor.setAttribute("aria-expanded","false");
+    const done=()=>{try{pop.hidePopover()}catch(e){}};
+    if(!reduceMotion()&&pop.animate){pop.animate([{opacity:1},{opacity:0,transform:"scale(.98)"}],{duration:120,easing:"ease-in"}).finished.then(done,done)}else done();
+    if(refocus)anchor.focus({preventScroll:true});
+    onClose&&onClose();
+  }};
+  openPop=state;
+  return state;
+}
+document.addEventListener("pointerdown",e=>{
+  if(openPop&&!openPop.pop.contains(e.target)&&!openPop.anchor.contains(e.target))openPop.close(false);
+},true);
+document.addEventListener("keydown",e=>{
+  if(openPop&&e.key==="Escape"){e.preventDefault();e.stopPropagation();openPop.close()}
+},true);
+addEventListener("resize",()=>{if(openPop)placePop(openPop.pop,openPop.anchor,openPop.align)});
+document.addEventListener("scroll",e=>{if(openPop&&!openPop.pop.contains(e.target))openPop.close(false)},true);
+
+// turn a native <select> into a glass dropdown (the select stays in place and keeps the value)
+function enhanceSelect(sel){
+  if(!HAS_POPOVER||sel.dataset.enhanced)return;
+  sel.dataset.enhanced="1";
+  const wrap=document.createElement("span");
+  wrap.className="gsel"+(sel.hasAttribute("data-mini")?" mini":"");
+  sel.parentNode.insertBefore(wrap,sel); wrap.appendChild(sel);
+  sel.tabIndex=-1; sel.setAttribute("aria-hidden","true");
+  const btn=document.createElement("button");
+  btn.type="button"; btn.className="gsel-btn";
+  btn.setAttribute("aria-haspopup","listbox"); btn.setAttribute("aria-expanded","false");
+  const lbl=sel.getAttribute("aria-label")||(sel.closest("label")&&sel.closest("label").firstChild.textContent.trim())||"";
+  if(lbl)btn.setAttribute("aria-label",lbl);
+  wrap.appendChild(btn);
+  const pop=document.createElement("div");
+  pop.className="glass-pop gsel-menu"; pop.setAttribute("popover","manual"); pop.setAttribute("role","listbox");
+  (sel.closest("dialog")||document.body).appendChild(pop);
+  let active=-1;
+  const refresh=()=>{
+    const o=sel.options[sel.selectedIndex];
+    btn.innerHTML=`<span>${esc(o?o.textContent:"")}</span>${CHEVRON}`;
+    if(lbl)btn.setAttribute("aria-label",lbl+": "+(o?o.textContent:""));
+  };
+  const build=()=>{
+    pop.innerHTML=[...sel.options].map((o,i)=>`<button type="button" class="gsel-opt" role="option" data-i="${i}" aria-selected="${i===sel.selectedIndex}">${esc(o.textContent)}${TICK}</button>`).join("");
+  };
+  const setActive=i=>{
+    const opts=pop.querySelectorAll(".gsel-opt"); if(!opts.length)return;
+    active=(i+opts.length)%opts.length;
+    opts.forEach((b,j)=>b.classList.toggle("active",j===active));
+    opts[active].focus({preventScroll:true}); opts[active].scrollIntoView({block:"nearest"});
+  };
+  const choose=i=>{
+    if(i!==sel.selectedIndex){
+      sel.selectedIndex=i; refresh();
+      sel.dispatchEvent(new Event("input",{bubbles:true}));
+      sel.dispatchEvent(new Event("change",{bubbles:true}));
+    }
+    openPop&&openPop.pop===pop&&openPop.close();
+  };
+  const open=(focusIdx)=>{
+    build(); showPop(pop,btn,"stretch");
+    setActive(focusIdx??Math.max(0,sel.selectedIndex));
+  };
+  btn.addEventListener("click",()=>{openPop&&openPop.pop===pop?openPop.close():open()});
+  btn.addEventListener("keydown",e=>{
+    if(["ArrowDown","ArrowUp","Enter"," "].includes(e.key)){e.preventDefault();if(!(openPop&&openPop.pop===pop))open()}
+  });
+  pop.addEventListener("click",e=>{const b=e.target.closest(".gsel-opt");if(b)choose(+b.dataset.i)});
+  pop.addEventListener("keydown",e=>{
+    if(e.key==="ArrowDown"){e.preventDefault();setActive(active+1)}
+    else if(e.key==="ArrowUp"){e.preventDefault();setActive(active-1)}
+    else if(e.key==="Home"){e.preventDefault();setActive(0)}
+    else if(e.key==="End"){e.preventDefault();setActive(-1)}
+    else if(e.key==="Tab"){openPop&&openPop.close(false)}
+  });
+  pop.addEventListener("pointermove",e=>{const b=e.target.closest(".gsel-opt");if(b&&+b.dataset.i!==active)setActive(+b.dataset.i)});
+  sel.addEventListener("focus",()=>btn.focus());
+  sel.addEventListener("change",refresh);
+  // keep the button label right when code changes the value or the options
+  const desc=Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,"value");
+  Object.defineProperty(sel,"value",{configurable:true,get(){return desc.get.call(this)},set(v){desc.set.call(this,v);refresh()}});
+  new MutationObserver(refresh).observe(sel,{childList:true,subtree:true,characterData:true});
+  refresh();
+}
+document.querySelectorAll("select").forEach(enhanceSelect);
+
+// account menu
+(function(){
+  const btn=$("userMenuBtn"), menu=$("userMenu");
+  const items=()=>[...menu.querySelectorAll(".gmenu-item")];
+  const open=()=>{syncThemeSwitch();menu.classList.add("match");showPop(menu,btn,innerWidth>760?"stretch":"end");items()[0].focus({preventScroll:true})};
+  const close=()=>{openPop&&openPop.pop===menu&&openPop.close(false)};
+  if(!HAS_POPOVER){ // older browsers: simple fallback, open the profile editor
+    btn.addEventListener("click",()=>openProfile()); menu.hidden=true; return;
+  }
+  btn.addEventListener("click",()=>{openPop&&openPop.pop===menu?openPop.close():open()});
+  btn.addEventListener("keydown",e=>{if(e.key==="ArrowDown"){e.preventDefault();open()}});
+  menu.addEventListener("keydown",e=>{
+    const list=items(), i=list.indexOf(document.activeElement);
+    if(e.key==="ArrowDown"){e.preventDefault();list[(i+1)%list.length].focus()}
+    if(e.key==="ArrowUp"){e.preventDefault();list[(i-1+list.length)%list.length].focus()}
+    if(e.key==="Tab")close();
+  });
+  // every item except the dark-mode switch closes the menu
+  menu.addEventListener("click",e=>{const it=e.target.closest(".gmenu-item");if(it&&it.id!=="themeBtn")close()});
+  $("menuAlarms").onclick=()=>{setTab("planner");$("railAlarm").click()};
+  $("menuBudget").onclick=()=>{setTab("budget");openBudgetDlg()};
+})();
+
 /* ---------- start ---------- */
 /* ---------- profile ---------- */
 let currentUser=session.user, pfBlob=null, pfPreviewUrl=null, pfRemove=false;
@@ -1221,6 +1413,7 @@ function applyProfile(user){
   profileName=(m.display_name||"").trim();
   $("userEmail").textContent=profileName||(username?"@"+username:user.email);
   $("userEmail").title=(username?"@"+username+" · ":"")+user.email;
+  $("userSub").textContent=profileName&&username?"@"+username:user.email;
   $("avatarInner").outerHTML=`<span id="avatarInner" style="display:contents">${avatarHTML(m.avatar_url,profileName,user.email)}</span>`;
   tick();
 }
@@ -1262,7 +1455,6 @@ function squareImage(file,size=256){
   });
 }
 $("profileBtn").onclick=openProfile;
-$("avatarBtn").onclick=openProfile;
 $("pfCancel").onclick=()=>$("profileDlg").close();
 $("profileDlg").addEventListener("cancel",e=>{if(pfSetup)e.preventDefault()});
 let pfCheckTimer=null;
